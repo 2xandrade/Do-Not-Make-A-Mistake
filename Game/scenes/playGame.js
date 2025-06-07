@@ -30,6 +30,9 @@ class PlayGame extends Phaser.Scene {
     totalMinutes = 15;
     elapsedTime = 0;
 
+    // Player Movement
+    lastDirection = 'down'; // default direction
+
     // Map
     tileSize = 256;
     tileMap;
@@ -51,7 +54,7 @@ class PlayGame extends Phaser.Scene {
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
 
         // Game Objects
-        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'player');
+        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'paladinoSprites');
         this.player.setDisplaySize(80, 80);
         this.player.setSize(80, 80);
         this.mapGeneration();
@@ -90,6 +93,36 @@ class PlayGame extends Phaser.Scene {
         this.timeBarBg.setDepth(1000);
         this.timeBar.setDepth(1001);
         this.timeText.setDepth(1002);
+
+        //Animations
+        this.anims.create({
+            key: 'walk-down',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [0, 1, 2, 3] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'walk-right',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [4, 5, 6, 7] }),
+            frameRate: 6,
+            repeat: -1
+        });
+        
+        this.anims.create({
+            key: 'walk-left',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [8, 9, 10, 11] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'walk-up',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [12, 13, 14, 15] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
     }
 
     update(time, delta) {
@@ -334,7 +367,7 @@ class PlayGame extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(1002);
 
-        this.levelText = this.add.text(60, 100, `Level: ${this.playerLVL}`, {
+        this.levelText = this.add.text(30, 100, `Level: ${this.playerLVL}`, {
             fontSize: '24px',
             fill: '#fff',
             fontFamily: 'Arial',
@@ -452,6 +485,8 @@ class PlayGame extends Phaser.Scene {
                 }
 
                 const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'enemy');
+                enemy.setDisplaySize(80, 80);
+                enemy.setSize(80, 80);
                 this.enemyGroup.add(enemy);
             }
         });
@@ -507,22 +542,42 @@ class PlayGame extends Phaser.Scene {
     handlePlayerMovement() {
         if (!this.player) return;
 
+        let direction = null;
         let movementDirection = new Phaser.Math.Vector2(0, 0);
         if (this.controlKeys.right.isDown) {
             movementDirection.x++;
+            direction = 'right';
         }
         if (this.controlKeys.left.isDown) {
             movementDirection.x--;
+            direction = 'left';
         }
         if (this.controlKeys.up.isDown) {
             movementDirection.y--;
+            direction = 'up';
         }
         if (this.controlKeys.down.isDown) {
             movementDirection.y++;
+            direction = 'down';
         }
 
         movementDirection.normalize();
         this.player.setVelocity(movementDirection.x * GameOptions.playerSpeed, movementDirection.y * GameOptions.playerSpeed);
+    
+        if (direction) {
+            this.lastDirection = direction;
+            this.player.anims.play(`walk-${direction}`, true);
+        } else {
+            // Idle frame based on last direction
+            const idleFrames = {
+                up: 12,
+                down: 0,
+                left: 8,
+                right: 4
+            };
+            this.player.anims.stop();
+            this.player.setFrame(idleFrames[this.lastDirection]);
+        }
     }
 
     collectCoins() {
