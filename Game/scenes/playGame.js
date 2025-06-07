@@ -9,12 +9,18 @@ class PlayGame extends Phaser.Scene {
     bulletGroup;
     coinGroup;
 
+    // Coins
+    coinXPBonus = 0;
+    doubleCoinChance = 0; // 0 = 0%
+
     // Player Stats
     playerHP = 5; // Initial health points
     isInvulnerable = false; // Invulnerability status
     playerLVL = 1;
     playerXP = 0;
     nextLevelXP = 100;
+    playerBulletCount = 1;
+    bulletRate = GameOptions.bulletRate;
 
     // UI Elements
     hpText = null; // Text object to display HP
@@ -29,6 +35,7 @@ class PlayGame extends Phaser.Scene {
     totalGameTime = 900000; // 15 minutes in milliseconds
     totalMinutes = 15;
     elapsedTime = 0;
+    isPaused = false;
 
     // Player Movement
     lastDirection = 'down'; // default direction
@@ -41,6 +48,42 @@ class PlayGame extends Phaser.Scene {
     tileCache = new Set();
     lastTileX = null;
     lastTileY = null;
+
+    // Upgrades
+    allUpgrades = [
+        {
+            label: 'Correr mais rápido',
+            effect: () => GameOptions.playerSpeed += 10,
+        },
+        {
+            label: '+1 HP',
+            effect: () => this.playerHP = Math.min(this.playerHP + 1, 5),
+        },
+        {
+            label: 'Tiros Velozes',
+            effect: () => GameOptions.bulletSpeed += 30,
+        },
+        {
+            label: 'Maior raio de Coleta',
+            effect: () => GameOptions.magnetRadius += 10,
+        },
+        {
+            label: 'Atirar mais vezes',
+            effect: () => this.bulletRate = Math.max(this.bulletRate - 50, 100),
+        },
+        {
+            label: '+1 tiro simultâneo',
+            effect: () => this.playerBulletCount += 1,
+        },
+        {
+            label: '+5 XP por moeda',
+            effect: () => this.coinXPBonus += 5,
+        },
+        {
+            label: 'Chance de moedas duplas',
+            effect: () => this.doubleCoinChance = Math.min(this.doubleCoinChance + 0.05, 1),
+        }
+    ];
 
     constructor() {
         super({
@@ -126,6 +169,7 @@ class PlayGame extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.isPaused) return;
         // Update health bar position
         if (this.player) {
             this.healthBarContainer.setPosition(this.player.x, this.player.y - 40);
@@ -493,16 +537,18 @@ class PlayGame extends Phaser.Scene {
 
         // Bullet firing timer
         this.time.addEvent({
-            delay: GameOptions.bulletRate,
+            delay: this.bulletRate,
             loop: true,
             callback: () => {
                 const closestEnemy = this.physics.closest(this.player, this.enemyGroup.getChildren());
                 if (closestEnemy !== null) {
-                    const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
-                    this.bulletGroup.add(bullet);
-                    this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                    for (let i = 0; i < this.playerBulletCount; i++) {
+                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
+                        this.bulletGroup.add(bullet);
+                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                    }
                 }
-            },
+            }
         });
     }
 
@@ -517,6 +563,12 @@ class PlayGame extends Phaser.Scene {
             (bullet.body).checkCollision.none = true;
             (enemy.body).checkCollision.none = true;            
             const coin = this.physics.add.sprite(enemy.x, enemy.y, 'coin');
+            if (Math.random() < this.doubleCoinChance) {
+                const extraCoin = this.physics.add.sprite(enemy.x + 10, enemy.y + 10, 'coin');
+                extraCoin.setDisplaySize(30, 30);
+                extraCoin.setSize(30, 30);
+                this.coinGroup.add(extraCoin);
+            }
             coin.setDisplaySize(30, 30);
             coin.setSize(30, 30);
             this.coinGroup.add(coin);
@@ -526,7 +578,7 @@ class PlayGame extends Phaser.Scene {
 
         // Player vs Coin 
         this.physics.add.collider(this.player, this.coinGroup, (player, coin) => {
-            this.playerXP += 10;
+            this.playerXP += 10 + this.coinXPBonus;
 
             if (this.playerXP >= this.nextLevelXP) {
                 this.levelUP();
@@ -598,8 +650,93 @@ class PlayGame extends Phaser.Scene {
         this.playerXP -= this.nextLevelXP;
         this.nextLevelXP = Math.floor(this.nextLevelXP * 1.2);
         this.updateLevelText(); // This now updates both level and XP bar
+        this.upgradeTime();
+    }
+
+    upgradeTime() {
+        this.isPaused = true;
+        this.physics.pause();
+        this.levelUpUI = []; // Keep track of all UI to remove later
+
+        const centerX = this.cameras.main.centerX;
+        const centerY = this.cameras.main.centerY;
+
+        // Background overlay
+        const overlay = this.add.rectangle(
+            centerX, centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.6
+        ).setScrollFactor(0).setDepth(2000);
+        this.levelUpUI.push(overlay);
+
+        // Title text
+        const title = this.add.text(centerX, centerY - 300, 'Subiu de Nível! Escolha uma melhoria:', {
+            fontSize: '36px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+        this.levelUpUI.push(title);
+
+        const shuffled = Phaser.Utils.Array.Shuffle(this.allUpgrades);
+        const upgrades = shuffled.slice(0, 3);
+
+        const boxWidth = 400;
+        const boxHeight = 600;
+        const spacing = 40;
+        const totalWidth = (boxWidth * upgrades.length) + (spacing * (upgrades.length - 1));
+        const startX = centerX - totalWidth / 2 + boxWidth / 2;
+
+        upgrades.forEach((upgrade, index) => {
+            const boxX = startX + index * (boxWidth + spacing);
+            const boxY = centerY + 50;
+
+            // Box background
+            const box = this.add.rectangle(
+                boxX, boxY,
+                boxWidth, boxHeight,
+                0x222222,
+                1
+            ).setStrokeStyle(4, 0xffffff)
+            .setScrollFactor(0)
+            .setInteractive()
+            .setDepth(2001)
+            .on('pointerover', () => {
+                box.setFillStyle(0x444444);
+            })
+            .on('pointerout', () => {
+                box.setFillStyle(0x222222);
+            })
+            .on('pointerdown', () => {
+                upgrade.effect();
+                this.resumeGameAfterLevelUp();
+            });
+
+            // Text inside the box
+            const text = this.add.text(boxX, boxY, upgrade.label, {
+                fontSize: '30px',
+                fill: '#ffff00',
+                fontFamily: 'Arial',
+                align: 'center',
+                wordWrap: { width: boxWidth - 100 }
+            }).setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(2002);
+
+            this.levelUpUI.push(box, text);
+        });
     }
     
+    resumeGameAfterLevelUp() {
+        this.isPaused = false;
+        this.physics.resume();
+        this.levelUpUI.forEach(el => el.destroy());
+        this.levelUpUI = [];
+        this.updateHealthBar();
+        this.updateLevelText();
+    }
+
     moveEnemies() {
         if (!this.player) return;
 
@@ -611,6 +748,8 @@ class PlayGame extends Phaser.Scene {
     }
 
     updateGameTimer(delta) {
+        if (this.isPaused) return; // ✅ Don't progress timer when paused
+
         this.elapsedTime += delta;
 
         if (Math.floor(this.elapsedTime / 1000) > Math.floor((this.elapsedTime - delta) / 1000)) {
