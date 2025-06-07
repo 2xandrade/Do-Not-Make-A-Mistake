@@ -29,7 +29,6 @@ Cada escolha influencia o julgamento final de sua existência, e apenas os mais 
 
 ### Stack Tecnológica
 Tecnologias, frameworks e bibliotecas utilizadas no desenvolvimento do projeto:
-*   **Javascript:** Responsável pela implementação das mecânicas e funcionalidades principais do jogo.
-*   **Bibliotecas:** Kaboom.js e KAPLAY.js
+*   **Phaser e Javascript:** Responsável pela implementação das mecânicas e funcionalidades principais do jogo.
+*   **Bibliotecas:**
 *   **HTML e CSS:** Estruturação e estilização da interface
-*   **VueJS**

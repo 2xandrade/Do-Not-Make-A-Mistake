@@ -27,6 +27,7 @@ class PlayGame extends Phaser.Scene {
 
     // Game Timer
     totalGameTime = 900000; // 15 minutes in milliseconds
+    totalMinutes = 15;
     elapsedTime = 0;
 
     // Map
@@ -51,8 +52,8 @@ class PlayGame extends Phaser.Scene {
 
         // Game Objects
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'player');
-        this.player.setDisplaySize(60, 60);
-        this.player.setSize(60, 60);
+        this.player.setDisplaySize(80, 80);
+        this.player.setSize(80, 80);
         this.mapGeneration();
         this.enemyGroup = this.physics.add.group();
         this.bulletGroup = this.physics.add.group();
@@ -222,6 +223,19 @@ class PlayGame extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setScrollFactor(0);
+
+        const checkpointMinutes = [3, 6, 9, 12];
+        checkpointMinutes.forEach(min => {
+            const checkpointX = barX + (barWidth * (min / this.totalMinutes));
+            this.add.graphics()
+                .lineStyle(2, 0xffffff, 0.5)
+                .beginPath()
+                .moveTo(checkpointX, barY)
+                .lineTo(checkpointX, barY + barHeight)
+                .strokePath()
+                .setScrollFactor(0)
+                .setDepth(1002);
+        });
     }
 
     updateTimeBar() {
