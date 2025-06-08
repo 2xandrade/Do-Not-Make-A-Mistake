@@ -16,9 +16,6 @@ class PlayGame extends Phaser.Scene {
     // Player Stats
     playerHP = 5; // Initial health points
     isInvulnerable = false; // Invulnerability status
-    playerLVL = 1;
-    playerXP = 0;
-    nextLevelXP = 100;
     playerBulletCount = 1;
     bulletRate = GameOptions.bulletRate;
 
@@ -32,9 +29,6 @@ class PlayGame extends Phaser.Scene {
     timeText = null; // Text object to display time
 
     // Game Timer
-    totalGameTime = 900000; // 15 minutes in milliseconds
-    totalMinutes = 15;
-    elapsedTime = 0;
     isPaused = false;
 
     // Player Movement
@@ -108,6 +102,17 @@ class PlayGame extends Phaser.Scene {
         // Camera follows the player
         this.cameras.main.startFollow(this.player);
 
+        //Player stats
+        this.playerLVL = 1;
+        this.playerXP = 0;
+        this.nextLevelXP = 100;
+
+        // Game Timer
+        this.totalGameTime = 900000; // 15 minutes in milliseconds
+        this.totalMinutes = 15;
+        this.elapsedTime = 0;
+
+
         // UI Creation
         this.createTimeBar();
         this.createHealthBar();
@@ -151,7 +156,7 @@ class PlayGame extends Phaser.Scene {
             frameRate: 6,
             repeat: -1
         });
-        
+
         this.anims.create({
             key: 'walk-left',
             frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [8, 9, 10, 11] }),
@@ -175,7 +180,7 @@ class PlayGame extends Phaser.Scene {
             this.healthBarContainer.setPosition(this.player.x, this.player.y - 40);
             this.updateTilemapAroundPlayer();
             this.cleanFarTiles(this.player.x, this.player.y);
-        
+
             // Atualiza o mapa ao redor do jogador
             this.updateTilemapAroundPlayer();
             // Atualiza a posição de referência se o jogador sair da área central
@@ -188,14 +193,14 @@ class PlayGame extends Phaser.Scene {
             this.cleanFarTiles(this.player.x, this.player.y, 15); // Aumentamos o raiso de limpeza
 
             // Atualiza o timer do jogo
-             this.elapsedTime += delta;
-    
+            this.elapsedTime += delta;
+
             // Atualiza a barra de tempo a cada segundo
             if (Math.floor(this.elapsedTime / 1000) > Math.floor((this.elapsedTime - delta) / 1000)) {
                 this.updateTimeBar();
             }
         }
-    
+
 
         // Player movement
         this.handlePlayerMovement();
@@ -292,14 +297,14 @@ class PlayGame extends Phaser.Scene {
             .setScrollFactor(0);
 
         // Time text
-        this.timeText = this.add.text(this.cameras.main.centerX, barY - 8, '15:00', { 
+        this.timeText = this.add.text(this.cameras.main.centerX, barY - 8, '15:00', {
             fontSize: '22px',
             fill: '#ffffff',
             fontFamily: 'Arial',
             fontWeight: 'bold'
         })
-        .setOrigin(0.5)
-        .setScrollFactor(0);
+            .setOrigin(0.5)
+            .setScrollFactor(0);
 
         const checkpointMinutes = [3, 6, 9, 12];
         checkpointMinutes.forEach(min => {
@@ -355,8 +360,8 @@ class PlayGame extends Phaser.Scene {
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 5, bottom: 5 }
         })
-        .setScrollFactor(0)
-        .setDepth(1003);
+            .setScrollFactor(0)
+            .setDepth(1003);
     }
 
     updateHealthBar() {
@@ -369,15 +374,15 @@ class PlayGame extends Phaser.Scene {
 
         // Background
         this.healthBarBg.fillStyle(0x333333, 1);
-        this.healthBarBg.fillRect(-barWidth/2, 0, barWidth, barHeight);
+        this.healthBarBg.fillRect(-barWidth / 2, 0, barWidth, barHeight);
 
         // Health
         this.healthBar.fillStyle(0xff0000, 1);
-        this.healthBar.fillRect(-barWidth/2, 0, barWidth * healthPercent, barHeight);
-        
+        this.healthBar.fillRect(-barWidth / 2, 0, barWidth * healthPercent, barHeight);
+
         // Border
         this.healthBarBg.lineStyle(1, 0xffffff, 1);
-        this.healthBarBg.strokeRect(-barWidth/2, 0, barWidth, barHeight);
+        this.healthBarBg.strokeRect(-barWidth / 2, 0, barWidth, barHeight);
     }
 
     createLevelUI() {
@@ -407,9 +412,9 @@ class PlayGame extends Phaser.Scene {
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 2, bottom: 2 }
         })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(1002);
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(1002);
 
         this.levelText = this.add.text(30, 100, `Level: ${this.playerLVL}`, {
             fontSize: '24px',
@@ -418,8 +423,8 @@ class PlayGame extends Phaser.Scene {
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 5, bottom: 5 }
         })
-        .setScrollFactor(0)
-        .setDepth(1003);
+            .setScrollFactor(0)
+            .setDepth(1003);
     }
 
     updateLevelText() {
@@ -501,7 +506,7 @@ class PlayGame extends Phaser.Scene {
                 const side = Phaser.Math.Between(0, 3);
                 let spawnPoint;
 
-                switch(side) {
+                switch (side) {
                     case 0: // Top
                         spawnPoint = new Phaser.Geom.Point(
                             Phaser.Math.Between(spawnArea.left, spawnArea.right),
@@ -561,7 +566,7 @@ class PlayGame extends Phaser.Scene {
         // Bullet vs Enemy
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
             (bullet.body).checkCollision.none = true;
-            (enemy.body).checkCollision.none = true;            
+            (enemy.body).checkCollision.none = true;
             const coin = this.physics.add.sprite(enemy.x, enemy.y, 'coin');
             if (Math.random() < this.doubleCoinChance) {
                 const extraCoin = this.physics.add.sprite(enemy.x + 10, enemy.y + 10, 'coin');
@@ -590,7 +595,7 @@ class PlayGame extends Phaser.Scene {
             coin.body.checkCollision.none = true;
         });
     }
-    
+
     handlePlayerMovement() {
         if (!this.player) return;
 
@@ -615,7 +620,7 @@ class PlayGame extends Phaser.Scene {
 
         movementDirection.normalize();
         this.player.setVelocity(movementDirection.x * GameOptions.playerSpeed, movementDirection.y * GameOptions.playerSpeed);
-    
+
         if (direction) {
             this.lastDirection = direction;
             this.player.anims.play(`walk-${direction}`, true);
@@ -639,7 +644,7 @@ class PlayGame extends Phaser.Scene {
         const coinsInCircle = this.physics.overlapCirc(this.player.x, this.player.y, GameOptions.magnetRadius, true, true);
         coinsInCircle.forEach((body) => {
             const bodySprite = body.gameObject;
-            if (bodySprite.texture.key == 'coin'){
+            if (bodySprite.texture.key == 'coin') {
                 this.physics.moveToObject(bodySprite, this.player, 500);
             }
         });
@@ -699,19 +704,19 @@ class PlayGame extends Phaser.Scene {
                 0x222222,
                 1
             ).setStrokeStyle(4, 0xffffff)
-            .setScrollFactor(0)
-            .setInteractive()
-            .setDepth(2001)
-            .on('pointerover', () => {
-                box.setFillStyle(0x444444);
-            })
-            .on('pointerout', () => {
-                box.setFillStyle(0x222222);
-            })
-            .on('pointerdown', () => {
-                upgrade.effect();
-                this.resumeGameAfterLevelUp();
-            });
+                .setScrollFactor(0)
+                .setInteractive()
+                .setDepth(2001)
+                .on('pointerover', () => {
+                    box.setFillStyle(0x444444);
+                })
+                .on('pointerout', () => {
+                    box.setFillStyle(0x222222);
+                })
+                .on('pointerdown', () => {
+                    upgrade.effect();
+                    this.resumeGameAfterLevelUp();
+                });
 
             // Text inside the box
             const text = this.add.text(boxX, boxY, upgrade.label, {
@@ -721,13 +726,13 @@ class PlayGame extends Phaser.Scene {
                 align: 'center',
                 wordWrap: { width: boxWidth - 100 }
             }).setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(2002);
+                .setScrollFactor(0)
+                .setDepth(2002);
 
             this.levelUpUI.push(box, text);
         });
     }
-    
+
     resumeGameAfterLevelUp() {
         this.isPaused = false;
         this.physics.resume();
@@ -763,7 +768,7 @@ class PlayGame extends Phaser.Scene {
 
     gameOver() {
         this.physics.pause();
-        
+
         if (this.player) {
             this.player.setTint(0xff0000);
             this.player.setAlpha(0.7);
@@ -777,8 +782,8 @@ class PlayGame extends Phaser.Scene {
             centerX,
             centerY - 50,
             'GAME OVER',
-            { 
-                fontSize: '64px', 
+            {
+                fontSize: '64px',
                 fill: '#ff0000',
                 fontFamily: 'Arial',
                 stroke: '#000000',
@@ -791,8 +796,8 @@ class PlayGame extends Phaser.Scene {
             centerX,
             centerY + 50,
             'Pressione R para reiniciar',
-            { 
-                fontSize: '24px', 
+            {
+                fontSize: '24px',
                 fill: '#ffffff',
                 fontFamily: 'Arial'
             }
@@ -801,12 +806,11 @@ class PlayGame extends Phaser.Scene {
         // Fade-in effect
         this.gameOverText.setAlpha(0);
         this.restartText.setAlpha(0);
-        
+
         if (this.tweens) {
             this.tweens.add({
                 targets: [this.gameOverText, this.restartText],
                 alpha: 1,
-                duration: 500,
                 ease: 'Linear'
             });
         }
@@ -818,7 +822,7 @@ class PlayGame extends Phaser.Scene {
 
         // Completa a barra de tempo
         this.timeBar.clear()
-        .fillStyle(0xff0000, 1)
-        .fillRect(0, 0, this.cameras.main.width * 0.9, 20);
+            .fillStyle(0xff0000, 1)
+            .fillRect(0, 0, this.cameras.main.width * 0.9, 20);
     }
 }
