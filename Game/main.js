@@ -19,6 +19,7 @@ window.onload = function() {
         backgroundColor : GameOptions.gameBackgroundColor,  // game background color
         scale           : scaleObject,                      // scale settings
         scene           : [                                 // array with game scenes
+            MainMenu,
             PreloadAssets, // Assumes PreloadAssets class is globally available
             PlayGame       // Assumes PlayGame class is globally available
         ],
