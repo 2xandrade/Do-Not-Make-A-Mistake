@@ -9,6 +9,9 @@ class PlayGame extends Phaser.Scene {
     bulletGroup;
     coinGroup;
 
+    // segundo inimigo
+   
+
     // Coins
     coinXPBonus = 0;
     doubleCoinChance = 0; // 0 = 0%
@@ -89,6 +92,9 @@ class PlayGame extends Phaser.Scene {
     create() {
         // Camera setup
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
+
+        this.referenceX = 0;
+        this.referenceY = 0;
 
         // Game Objects
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'paladinoSprites');
@@ -201,6 +207,9 @@ class PlayGame extends Phaser.Scene {
             }
         }
 
+        if (!this.secondEnemySpawned && this.elapsedTime >= 180000) {
+                this.spawnSecondEnemy();
+        }
 
         // Player movement
         this.handlePlayerMovement();
@@ -439,6 +448,42 @@ class PlayGame extends Phaser.Scene {
             .fillRect(0, 0, xpBarWidth * xpPercent, 20);
     }
 
+    spawnSecondEnemy() {
+        
+        // Verifica limite de inimigos ativos
+        const activeSecondEnemies = this.enemyGroup.getChildren().filter(e => 
+            e.texture.key === 'secondEnemy'
+        ).length;
+        
+        if (activeSecondEnemies >= GameOptions.secondEnemy.maxActive) return;
+        
+        // Posicionamento fora da tela
+        const side = Phaser.Math.Between(0, 3);
+        let x, y;
+        const padding = 100;
+        const cam = this.cameras.main;
+        
+        switch(side) {
+            case 0: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
+                    y = cam.scrollY - padding; break; // Topo
+            case 1: x = cam.scrollX + cam.width + padding;
+                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Direita
+            case 2: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
+                    y = cam.scrollY + cam.height + padding; break; // Fundo
+            case 3: x = cam.scrollX - padding;
+                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Esquerda
+        }
+        
+        // Criação do inimigo
+        const enemy = this.physics.add.sprite(x, y, 'secondEnemy');
+        enemy.setDisplaySize(GameOptions.secondEnemy.size, GameOptions.secondEnemy.size);
+        enemy.setTint(GameOptions.secondEnemy.color);
+        enemy.health = GameOptions.secondEnemy.health;
+        enemy.damage = GameOptions.secondEnemy.damage || 2; // Dano padrão se não definido
+        
+        this.enemyGroup.add(enemy);
+    }
+
     takeDamage() {
         if (this.isInvulnerable) return;
 
@@ -540,6 +585,16 @@ class PlayGame extends Phaser.Scene {
             }
         });
 
+         // Timer para SecondEnemy (inicia após 3 minutos)
+         this.time.delayedCall(GameOptions.secondEnemy.spawnTime, () => {
+            this.time.addEvent({
+                delay: GameOptions.secondEnemy.spawnInterval, // Intervalo entre spawns
+                loop: true,
+                callback: this.spawnSecondEnemy,
+                callbackScope: this
+            });
+        });
+
         // Bullet firing timer
         this.time.addEvent({
             delay: this.bulletRate,
@@ -567,18 +622,32 @@ class PlayGame extends Phaser.Scene {
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
             (bullet.body).checkCollision.none = true;
             (enemy.body).checkCollision.none = true;
-            const coin = this.physics.add.sprite(enemy.x, enemy.y, 'coin');
-            if (Math.random() < this.doubleCoinChance) {
-                const extraCoin = this.physics.add.sprite(enemy.x + 10, enemy.y + 10, 'coin');
-                extraCoin.setDisplaySize(30, 30);
-                extraCoin.setSize(30, 30);
-                this.coinGroup.add(extraCoin);
+
+            // Verifica se é um SecondEnemy
+            const isSecondEnemy = enemy.texture && enemy.texture.key === 'secondEnemy';
+            
+            if (isSecondEnemy) {
+                // Lógica para SecondEnemy
+                enemy.health--;
+                enemy.setTint(0xff0000); // Feedback visual de dano
+                
+                this.time.delayedCall(100, () => {
+                    if (enemy.active) {
+                        enemy.setTint(GameOptions.secondEnemy.color);
+                    }
+                });
+
+                if (enemy.health <= 0) {
+                    // Recompensa maior (5 moedas + XP especial)
+                    this.spawnCoinCluster(enemy.x, enemy.y, 5);
+                    this.addXP(GameOptions.secondEnemy.xpReward);
+                    enemy.destroy();
+                }
+            } else {
+                // Lógica para inimigos normais
+                this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                enemy.destroy();
             }
-            coin.setDisplaySize(30, 30);
-            coin.setSize(30, 30);
-            this.coinGroup.add(coin);
-            this.bulletGroup.killAndHide(bullet);
-            this.enemyGroup.killAndHide(enemy);
         });
 
         // Player vs Coin 
@@ -596,6 +665,15 @@ class PlayGame extends Phaser.Scene {
         });
     }
 
+    spawnCoinCluster(x, y, count) {
+        for (let i = 0; i < count; i++) {
+            const coin = this.physics.add.sprite(x, y, 'coin')
+                .setDisplaySize(30, 30)
+                .setSize(30, 30);
+            this.coinGroup.add(coin);
+        }
+    }
+    
     handlePlayerMovement() {
         if (!this.player) return;
 
