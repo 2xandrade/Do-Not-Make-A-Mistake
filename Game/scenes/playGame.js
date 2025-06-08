@@ -9,9 +9,6 @@ class PlayGame extends Phaser.Scene {
     bulletGroup;
     coinGroup;
 
-    // segundo inimigo
-   
-
     // Coins
     coinXPBonus = 0;
     doubleCoinChance = 0; // 0 = 0%
@@ -45,6 +42,12 @@ class PlayGame extends Phaser.Scene {
     tileCache = new Set();
     lastTileX = null;
     lastTileY = null;
+
+    // NPC
+    npcGroup;
+    npcArrow;
+    npcCheckpoints = [3, 6, 9, 12]; // in minutes
+    npcVisited = new Set();
 
     // Upgrades
     allUpgrades = [
@@ -114,6 +117,9 @@ class PlayGame extends Phaser.Scene {
         this.playerXP = 0;
         this.nextLevelXP = 100;
 
+        // NPC
+        this.npcGroup = this.physics.add.group();
+
         // Game Timer
         this.totalGameTime = 900000; // 15 minutes in milliseconds
         this.totalMinutes = 15;
@@ -173,6 +179,20 @@ class PlayGame extends Phaser.Scene {
             repeat: -1
         });
 
+        this.anims.create({
+            key: 'npcSprites',
+            frames: this.anims.generateFrameNumbers('npcSprites', { frames: [0, 1] }),
+            frameRate: 3,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'gatoPernas',
+            frames: this.anims.generateFrameNumbers('gatoPernasSprites', { start: 0, end: 3 }),
+            frameRate: 9,
+            repeat: -1
+        });
+
         // this.anims.create({
         //     key: 'gatoCapuz',
         //     frames: this.anims.generateFrameNumbers('gatoCapuzSprites', { frames: [0, 1] }),
@@ -180,12 +200,7 @@ class PlayGame extends Phaser.Scene {
         //     repeat: -1
         // });
 
-        // this.anims.create({
-        //     key: 'gatoPernas',
-        //     frames: this.anims.generateFrameNumbers('gatoPernasSprites', { start: 0, end: 3 }),
-        //     frameRate: 9,
-        //     repeat: -1
-        // });
+        
 
     }
 
@@ -219,6 +234,17 @@ class PlayGame extends Phaser.Scene {
 
         if (!this.secondEnemySpawned && this.elapsedTime >= 180000) {
                 this.spawnSecondEnemy();
+        }
+
+        if (this.npcArrow && this.npcArrow.target && this.npcArrow.target.active) {
+            const dx = this.npcArrow.target.x - this.player.x;
+            const dy = this.npcArrow.target.y - this.player.y;
+            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.npcArrow.target.x, this.npcArrow.target.y);
+            
+            this.npcArrow.setRotation(angle);
+            this.npcArrow.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
+        } else {
+            this.npcArrow?.setVisible(false);
         }
 
         // Player movement
@@ -495,7 +521,8 @@ class PlayGame extends Phaser.Scene {
         
         // Criação do inimigo
         const enemy = this.physics.add.sprite(x, y, 'gatoPernas');
-        enemy.setDisplaySize(GameOptions.secondEnemy.size, GameOptions.secondEnemy.size);
+        enemy.setDisplaySize(150, 150);
+        enemy.setSize(150, 150);
         enemy.setTint(GameOptions.secondEnemy.color);
         enemy.health = GameOptions.secondEnemy.health;
         enemy.damage = GameOptions.secondEnemy.damage || 2; // Dano padrão se não definido
@@ -662,14 +689,16 @@ class PlayGame extends Phaser.Scene {
 
         // Bullet vs Enemy
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
-            (bullet.body).checkCollision.none = true;
-            (enemy.body).checkCollision.none = true;
+            bullet.destroy();
             const isSecondEnemy = enemy.texture && enemy.texture.key === 'gatoPernas';
             
+            if (!isSecondEnemy) {
+                    enemy.body.checkCollision.none = true;
+            }
+
             if (isSecondEnemy) {
                 enemy.health--;
                 enemy.setTint(0xff0000);
-                
                 this.time.delayedCall(100, () => {
                     if (enemy.active) {
                         enemy.setTint(GameOptions.secondEnemy.color);
@@ -678,12 +707,11 @@ class PlayGame extends Phaser.Scene {
 
                 if (enemy.health <= 0) {
                     this.spawnCoinCluster(enemy.x, enemy.y, 5);
-                    this.addXP(GameOptions.secondEnemy.xpReward);
                     enemy.destroy();
-                    bullet.destroy();    
+                    bullet.destroy();
                 }
             } else {
-                this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                 this.spawnCoinCluster(enemy.x, enemy.y, 1);
                 enemy.destroy();
                 bullet.destroy();
             }
@@ -702,6 +730,16 @@ class PlayGame extends Phaser.Scene {
             this.coinGroup.killAndHide(coin);
             coin.body.checkCollision.none = true;
         });
+
+        this.physics.add.overlap(this.player, this.npcGroup, (player, npc) => {
+            if (!npc.collected) {
+                npc.collected = true;
+                npc.destroy();
+                this.npcArrow?.setVisible(false);
+                this.upgradeTime(); // Reuse your level-up UI
+            }
+        });
+
     }
 
     spawnCoinCluster(x, y, count) {
@@ -870,7 +908,7 @@ class PlayGame extends Phaser.Scene {
     }
 
     updateGameTimer(delta) {
-        if (this.isPaused) return; // ✅ Don't progress timer when paused
+        if (this.isPaused) return;
 
         this.elapsedTime += delta;
 
@@ -881,7 +919,37 @@ class PlayGame extends Phaser.Scene {
         if (this.elapsedTime >= this.totalGameTime) {
             this.gameOver();
         }
+
+        const elapsedMinutes = Math.floor(this.elapsedTime / 60000);
+        this.npcCheckpoints.forEach(min => {
+            if (elapsedMinutes === min && !this.npcVisited.has(min)) {
+                this.spawnNPC(min);
+                this.npcVisited.add(min);
+            }
+        });
     }
+
+    spawnNPC(minuteCheckpoint) {
+        const cam = this.cameras.main;
+        const padding = 300;
+        const x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
+        const y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding);
+
+        const npc = this.physics.add.sprite(x, y, 'npcSprites');
+        npc.setDisplaySize(150, 150);
+        npc.checkpointMinute = minuteCheckpoint;
+
+        this.npcGroup.add(npc);
+
+        // Arrow pointing to this NPC
+        if (!this.npcArrow) {
+            this.npcArrow = this.add.sprite(0, 0, 'armas', 1).setScrollFactor(0).setDepth(2000);
+            this.npcArrow.setDisplaySize(50, 50);
+        }
+
+        this.npcArrow.target = npc;
+    }
+
 
     gameOver() {
         this.physics.pause();

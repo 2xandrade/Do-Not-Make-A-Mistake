@@ -26,6 +26,7 @@ class PreloadAssets extends Phaser.Scene {
             { key: 'ladinaSprites', path: 'assets/sprites/personagens/ladinaSprites.png' },
             { key: 'arqueiraSprites', path: 'assets/sprites/personagens/arqueiraSprites.png' },
             { key: 'bardoSprites', path: 'assets/sprites/personagens/bardoSprites.png' },
+            { key: 'npcSprites', path: 'assets/sprites/npc/npcSprites.png' },
             // Miscellaneous
             { key: 'armas', path: 'assets/sprites/armas/armasSprite.png' }
         ];
