@@ -105,8 +105,7 @@ class PlayGame extends Phaser.Scene {
         ];
 
         if (data && data.characterIndex !== undefined) {
-            this.selectedCharacterIndex = data.characterIndex; // armazena o índice numérico
-            // usa o índice para obter a chave do spritesheet correspondente
+            this.selectedCharacterIndex = data.characterIndex;
             this.selectedSpriteKey = characterSpriteKeys[data.characterIndex] || "paladinoSprites";
         } else {
             this.selectedCharacterIndex = 0; // padrão primeiro personagem
@@ -119,7 +118,7 @@ class PlayGame extends Phaser.Scene {
         // Camera setup
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
 
-        this.selectedCharacter = 'ladinaSprites';
+        this.selectedCharacter = this.selectedSpriteKey;
 
         // Game Objects
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter);
