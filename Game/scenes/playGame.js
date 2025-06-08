@@ -93,28 +93,18 @@ class PlayGame extends Phaser.Scene {
         // Camera setup
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
 
-<<<<<<< HEAD
         this.selectedCharacter = 'ladinaSprites';
 
         // Game Objects
-<<<<<<< Updated upstream
-        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'player');
-=======
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter);
->>>>>>> Stashed changes
-=======
-        this.referenceX = 0;
-        this.referenceY = 0;
-
-        // Game Objects
-        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'paladinoSprites');
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
         this.player.setDisplaySize(80, 80);
         this.player.setSize(80, 80);
         this.mapGeneration();
         this.enemyGroup = this.physics.add.group();
         this.bulletGroup = this.physics.add.group();
         this.coinGroup = this.physics.add.group();
+        this.referenceX = 0;
+        this.referenceY = 0;
 
         // Camera follows the player
         this.cameras.main.startFollow(this.player);
@@ -158,9 +148,6 @@ class PlayGame extends Phaser.Scene {
         this.timeBarBg.setDepth(1000);
         this.timeBar.setDepth(1001);
         this.timeText.setDepth(1002);
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
 
         const playerWalkAnimations = [
             { key: 'walk-down', frames: [0, 1, 2, 3] },
@@ -200,39 +187,6 @@ class PlayGame extends Phaser.Scene {
         //     repeat: -1
         // });
 
->>>>>>> Stashed changes
-=======
-
-        //Animations
-        this.anims.create({
-            key: 'walk-down',
-            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [0, 1, 2, 3] }),
-            frameRate: 6,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'walk-right',
-            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [4, 5, 6, 7] }),
-            frameRate: 6,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'walk-left',
-            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [8, 9, 10, 11] }),
-            frameRate: 6,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'walk-up',
-            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [12, 13, 14, 15] }),
-            frameRate: 6,
-            repeat: -1
-        });
-
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
     }
 
     update(time, delta) {
@@ -262,13 +216,10 @@ class PlayGame extends Phaser.Scene {
                 this.updateTimeBar();
             }
         }
-<<<<<<< HEAD
-=======
 
         if (!this.secondEnemySpawned && this.elapsedTime >= 180000) {
                 this.spawnSecondEnemy();
         }
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
 
         // Player movement
         this.handlePlayerMovement();
@@ -511,7 +462,7 @@ class PlayGame extends Phaser.Scene {
         
         // Verifica limite de inimigos ativos
         const activeSecondEnemies = this.enemyGroup.getChildren().filter(e => 
-            e.texture.key === 'secondEnemy'
+            e.texture.key === 'gatoPernas'
         ).length;
         
         if (activeSecondEnemies >= GameOptions.secondEnemy.maxActive) return;
@@ -534,7 +485,7 @@ class PlayGame extends Phaser.Scene {
         }
         
         // Criação do inimigo
-        const enemy = this.physics.add.sprite(x, y, 'secondEnemy');
+        const enemy = this.physics.add.sprite(x, y, 'gatoPernas');
         enemy.setDisplaySize(GameOptions.secondEnemy.size, GameOptions.secondEnemy.size);
         enemy.setTint(GameOptions.secondEnemy.color);
         enemy.health = GameOptions.secondEnemy.health;
@@ -637,18 +588,9 @@ class PlayGame extends Phaser.Scene {
                         break;
                 }
 
-<<<<<<< Updated upstream
-                const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'enemy');
-<<<<<<< HEAD
-=======
                 const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'gatoSlime');
                 enemy.setDisplaySize(200, 200);
                 enemy.setSize(100, 100);
->>>>>>> Stashed changes
-=======
-                enemy.setDisplaySize(80, 80);
-                enemy.setSize(80, 80);
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
                 this.enemyGroup.add(enemy);
                 enemy.play('gatoSlime');
             }
@@ -664,57 +606,40 @@ class PlayGame extends Phaser.Scene {
             });
         });
 
-        // Bullet firing timer
         this.time.addEvent({
             delay: this.bulletRate,
             loop: true,
             callback: () => {
                 const closestEnemy = this.physics.closest(this.player, this.enemyGroup.getChildren());
                 if (closestEnemy !== null) {
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-                    const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
-                    this.bulletGroup.add(bullet);
-                    this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
-=======
-                    // Calculate the direction towards the closest enemy
                     const dx = closestEnemy.x - this.player.x;
                     const dy = closestEnemy.y - this.player.y;
-
-                    let bulletFrame = 1; // Default to right-facing (sprite code 1)
-
+                    let bulletFrame = 1;
                     if (Math.abs(dx) > Math.abs(dy)) {
-                        // More horizontal movement
                         if (dx > 0) {
-                            bulletFrame = 1; // Right-facing (sprite code 1)
+                            bulletFrame = 1;
                         } else {
-                            bulletFrame = 3; // Left-facing (sprite code 3)
+                            bulletFrame = 3;
                         }
                     } else {
-                        // More vertical movement (or equal)
                         if (dy > 0) {
-                            bulletFrame = 4; // Down-facing (sprite code 4)
+                            bulletFrame = 4;
                         } else {
-                            bulletFrame = 2; // Up-facing (sprite code 2)
+                            bulletFrame = 2;
                         }
                     }
-
                     for (let i = 0; i < this.playerBulletCount; i++) {
-                        // Create the bullet with the determined frame
                         const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'armas', bulletFrame);
                         bullet.setDisplaySize(100, 100);
                         bullet.setSize(100, 100);
                         this.bulletGroup.add(bullet);
                         this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                        this.time.delayedCall(3000, () => {
+                            if (bullet && bullet.active) {
+                                bullet.destroy();
+                            }
+                        }, [], this);
                     }
->>>>>>> Stashed changes
-=======
-                    for (let i = 0; i < this.playerBulletCount; i++) {
-                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
-                        this.bulletGroup.add(bullet);
-                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
-                    }
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
                 }
             }
         });
@@ -728,16 +653,18 @@ class PlayGame extends Phaser.Scene {
 
         // Bullet vs Enemy
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
-            (bullet.body).checkCollision.none = true;
-            (enemy.body).checkCollision.none = true;
-
-            // Verifica se é um SecondEnemy
-            const isSecondEnemy = enemy.texture && enemy.texture.key === 'secondEnemy';
+            bullet.destroy();
             
+            const isSecondEnemy = enemy.texture && enemy.texture.key === 'gatoPernas';
+            
+            if (!isSecondEnemy) {
+                    enemy.body.checkCollision.none = true;
+            }
+
             if (isSecondEnemy) {
-                // Lógica para SecondEnemy
                 enemy.health--;
-                enemy.setTint(0xff0000); // Feedback visual de dano
+
+                enemy.setTint(0xff0000);
                 
                 this.time.delayedCall(100, () => {
                     if (enemy.active) {
@@ -746,15 +673,16 @@ class PlayGame extends Phaser.Scene {
                 });
 
                 if (enemy.health <= 0) {
-                    // Recompensa maior (5 moedas + XP especial)
-                    this.spawnCoinCluster(enemy.x, enemy.y, 5);
-                    this.addXP(GameOptions.secondEnemy.xpReward);
+                    // Solta mais moedas que valem mais XP
+                    this.spawnCoinCluster(enemy.x, enemy.y, 5); // 5 moedas no lugar de 1
                     enemy.destroy();
+                    bullet.destroy();
                 }
             } else {
-                // Lógica para inimigos normais
+                // Inimigo normal
                 this.spawnCoinCluster(enemy.x, enemy.y, 1);
                 enemy.destroy();
+                bullet.destroy();
             }
         });
 
@@ -765,7 +693,7 @@ class PlayGame extends Phaser.Scene {
             if (this.playerXP >= this.nextLevelXP) {
                 this.levelUP();
             } else {
-                this.updateLevelText(); // Update XP bar even if no level up
+                this.updateLevelText();
             }
 
             this.coinGroup.killAndHide(coin);
