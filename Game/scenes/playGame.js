@@ -9,12 +9,18 @@ class PlayGame extends Phaser.Scene {
     bulletGroup;
     coinGroup;
 
+    // segundo inimigo
+   
+
+    // Coins
+    coinXPBonus = 0;
+    doubleCoinChance = 0; // 0 = 0%
+
     // Player Stats
     playerHP = 5; // Initial health points
     isInvulnerable = false; // Invulnerability status
-    playerLVL = 1;
-    playerXP = 0;
-    nextLevelXP = 100;
+    playerBulletCount = 1;
+    bulletRate = GameOptions.bulletRate;
 
     // UI Elements
     hpText = null; // Text object to display HP
@@ -26,9 +32,10 @@ class PlayGame extends Phaser.Scene {
     timeText = null; // Text object to display time
 
     // Game Timer
-    totalGameTime = 900000; // 15 minutes in milliseconds
-    totalMinutes = 15;
-    elapsedTime = 0;
+    isPaused = false;
+
+    // Player Movement
+    lastDirection = 'down'; // default direction
 
     // Map
     tileSize = 256;
@@ -38,6 +45,42 @@ class PlayGame extends Phaser.Scene {
     tileCache = new Set();
     lastTileX = null;
     lastTileY = null;
+
+    // Upgrades
+    allUpgrades = [
+        {
+            label: 'Correr mais rápido',
+            effect: () => GameOptions.playerSpeed += 10,
+        },
+        {
+            label: '+1 HP',
+            effect: () => this.playerHP = Math.min(this.playerHP + 1, 5),
+        },
+        {
+            label: 'Tiros Velozes',
+            effect: () => GameOptions.bulletSpeed += 30,
+        },
+        {
+            label: 'Maior raio de Coleta',
+            effect: () => GameOptions.magnetRadius += 10,
+        },
+        {
+            label: 'Atirar mais vezes',
+            effect: () => this.bulletRate = Math.max(this.bulletRate - 50, 100),
+        },
+        {
+            label: '+1 tiro simultâneo',
+            effect: () => this.playerBulletCount += 1,
+        },
+        {
+            label: '+5 XP por moeda',
+            effect: () => this.coinXPBonus += 5,
+        },
+        {
+            label: 'Chance de moedas duplas',
+            effect: () => this.doubleCoinChance = Math.min(this.doubleCoinChance + 0.05, 1),
+        }
+    ];
 
     constructor() {
         super({
@@ -50,8 +93,11 @@ class PlayGame extends Phaser.Scene {
         // Camera setup
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
 
+        this.referenceX = 0;
+        this.referenceY = 0;
+
         // Game Objects
-        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'player');
+        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'paladinoSprites');
         this.player.setDisplaySize(80, 80);
         this.player.setSize(80, 80);
         this.mapGeneration();
@@ -61,6 +107,17 @@ class PlayGame extends Phaser.Scene {
 
         // Camera follows the player
         this.cameras.main.startFollow(this.player);
+
+        //Player stats
+        this.playerLVL = 1;
+        this.playerXP = 0;
+        this.nextLevelXP = 100;
+
+        // Game Timer
+        this.totalGameTime = 900000; // 15 minutes in milliseconds
+        this.totalMinutes = 15;
+        this.elapsedTime = 0;
+
 
         // UI Creation
         this.createTimeBar();
@@ -90,15 +147,46 @@ class PlayGame extends Phaser.Scene {
         this.timeBarBg.setDepth(1000);
         this.timeBar.setDepth(1001);
         this.timeText.setDepth(1002);
+
+        //Animations
+        this.anims.create({
+            key: 'walk-down',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [0, 1, 2, 3] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'walk-right',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [4, 5, 6, 7] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'walk-left',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [8, 9, 10, 11] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'walk-up',
+            frames: this.anims.generateFrameNumbers('paladinoSprites', { frames: [12, 13, 14, 15] }),
+            frameRate: 6,
+            repeat: -1
+        });
+
     }
 
     update(time, delta) {
+        if (this.isPaused) return;
         // Update health bar position
         if (this.player) {
             this.healthBarContainer.setPosition(this.player.x, this.player.y - 40);
             this.updateTilemapAroundPlayer();
             this.cleanFarTiles(this.player.x, this.player.y);
-        
+
             // Atualiza o mapa ao redor do jogador
             this.updateTilemapAroundPlayer();
             // Atualiza a posição de referência se o jogador sair da área central
@@ -111,14 +199,17 @@ class PlayGame extends Phaser.Scene {
             this.cleanFarTiles(this.player.x, this.player.y, 15); // Aumentamos o raiso de limpeza
 
             // Atualiza o timer do jogo
-             this.elapsedTime += delta;
-    
+            this.elapsedTime += delta;
+
             // Atualiza a barra de tempo a cada segundo
             if (Math.floor(this.elapsedTime / 1000) > Math.floor((this.elapsedTime - delta) / 1000)) {
                 this.updateTimeBar();
             }
         }
-    
+
+        if (!this.secondEnemySpawned && this.elapsedTime >= 180000) {
+                this.spawnSecondEnemy();
+        }
 
         // Player movement
         this.handlePlayerMovement();
@@ -215,14 +306,14 @@ class PlayGame extends Phaser.Scene {
             .setScrollFactor(0);
 
         // Time text
-        this.timeText = this.add.text(this.cameras.main.centerX, barY - 8, '15:00', { 
+        this.timeText = this.add.text(this.cameras.main.centerX, barY - 8, '15:00', {
             fontSize: '22px',
             fill: '#ffffff',
             fontFamily: 'Arial',
             fontWeight: 'bold'
         })
-        .setOrigin(0.5)
-        .setScrollFactor(0);
+            .setOrigin(0.5)
+            .setScrollFactor(0);
 
         const checkpointMinutes = [3, 6, 9, 12];
         checkpointMinutes.forEach(min => {
@@ -278,8 +369,8 @@ class PlayGame extends Phaser.Scene {
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 5, bottom: 5 }
         })
-        .setScrollFactor(0)
-        .setDepth(1003);
+            .setScrollFactor(0)
+            .setDepth(1003);
     }
 
     updateHealthBar() {
@@ -292,15 +383,15 @@ class PlayGame extends Phaser.Scene {
 
         // Background
         this.healthBarBg.fillStyle(0x333333, 1);
-        this.healthBarBg.fillRect(-barWidth/2, 0, barWidth, barHeight);
+        this.healthBarBg.fillRect(-barWidth / 2, 0, barWidth, barHeight);
 
         // Health
         this.healthBar.fillStyle(0xff0000, 1);
-        this.healthBar.fillRect(-barWidth/2, 0, barWidth * healthPercent, barHeight);
-        
+        this.healthBar.fillRect(-barWidth / 2, 0, barWidth * healthPercent, barHeight);
+
         // Border
         this.healthBarBg.lineStyle(1, 0xffffff, 1);
-        this.healthBarBg.strokeRect(-barWidth/2, 0, barWidth, barHeight);
+        this.healthBarBg.strokeRect(-barWidth / 2, 0, barWidth, barHeight);
     }
 
     createLevelUI() {
@@ -330,19 +421,19 @@ class PlayGame extends Phaser.Scene {
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 2, bottom: 2 }
         })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(1002);
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(1002);
 
-        this.levelText = this.add.text(60, 100, `Level: ${this.playerLVL}`, {
+        this.levelText = this.add.text(30, 100, `Level: ${this.playerLVL}`, {
             fontSize: '24px',
             fill: '#fff',
             fontFamily: 'Arial',
             backgroundColor: '#000000AA',
             padding: { left: 10, right: 10, top: 5, bottom: 5 }
         })
-        .setScrollFactor(0)
-        .setDepth(1003);
+            .setScrollFactor(0)
+            .setDepth(1003);
     }
 
     updateLevelText() {
@@ -355,6 +446,42 @@ class PlayGame extends Phaser.Scene {
         this.xpBar.clear()
             .fillStyle(0xffff00, 1)
             .fillRect(0, 0, xpBarWidth * xpPercent, 20);
+    }
+
+    spawnSecondEnemy() {
+        
+        // Verifica limite de inimigos ativos
+        const activeSecondEnemies = this.enemyGroup.getChildren().filter(e => 
+            e.texture.key === 'secondEnemy'
+        ).length;
+        
+        if (activeSecondEnemies >= GameOptions.secondEnemy.maxActive) return;
+        
+        // Posicionamento fora da tela
+        const side = Phaser.Math.Between(0, 3);
+        let x, y;
+        const padding = 100;
+        const cam = this.cameras.main;
+        
+        switch(side) {
+            case 0: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
+                    y = cam.scrollY - padding; break; // Topo
+            case 1: x = cam.scrollX + cam.width + padding;
+                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Direita
+            case 2: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
+                    y = cam.scrollY + cam.height + padding; break; // Fundo
+            case 3: x = cam.scrollX - padding;
+                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Esquerda
+        }
+        
+        // Criação do inimigo
+        const enemy = this.physics.add.sprite(x, y, 'secondEnemy');
+        enemy.setDisplaySize(GameOptions.secondEnemy.size, GameOptions.secondEnemy.size);
+        enemy.setTint(GameOptions.secondEnemy.color);
+        enemy.health = GameOptions.secondEnemy.health;
+        enemy.damage = GameOptions.secondEnemy.damage || 2; // Dano padrão se não definido
+        
+        this.enemyGroup.add(enemy);
     }
 
     takeDamage() {
@@ -424,7 +551,7 @@ class PlayGame extends Phaser.Scene {
                 const side = Phaser.Math.Between(0, 3);
                 let spawnPoint;
 
-                switch(side) {
+                switch (side) {
                     case 0: // Top
                         spawnPoint = new Phaser.Geom.Point(
                             Phaser.Math.Between(spawnArea.left, spawnArea.right),
@@ -452,22 +579,36 @@ class PlayGame extends Phaser.Scene {
                 }
 
                 const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'enemy');
+                enemy.setDisplaySize(80, 80);
+                enemy.setSize(80, 80);
                 this.enemyGroup.add(enemy);
             }
         });
 
+         // Timer para SecondEnemy (inicia após 3 minutos)
+         this.time.delayedCall(GameOptions.secondEnemy.spawnTime, () => {
+            this.time.addEvent({
+                delay: GameOptions.secondEnemy.spawnInterval, // Intervalo entre spawns
+                loop: true,
+                callback: this.spawnSecondEnemy,
+                callbackScope: this
+            });
+        });
+
         // Bullet firing timer
         this.time.addEvent({
-            delay: GameOptions.bulletRate,
+            delay: this.bulletRate,
             loop: true,
             callback: () => {
                 const closestEnemy = this.physics.closest(this.player, this.enemyGroup.getChildren());
                 if (closestEnemy !== null) {
-                    const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
-                    this.bulletGroup.add(bullet);
-                    this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                    for (let i = 0; i < this.playerBulletCount; i++) {
+                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
+                        this.bulletGroup.add(bullet);
+                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                    }
                 }
-            },
+            }
         });
     }
 
@@ -480,18 +621,38 @@ class PlayGame extends Phaser.Scene {
         // Bullet vs Enemy
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
             (bullet.body).checkCollision.none = true;
-            (enemy.body).checkCollision.none = true;            
-            const coin = this.physics.add.sprite(enemy.x, enemy.y, 'coin');
-            coin.setDisplaySize(30, 30);
-            coin.setSize(30, 30);
-            this.coinGroup.add(coin);
-            this.bulletGroup.killAndHide(bullet);
-            this.enemyGroup.killAndHide(enemy);
+            (enemy.body).checkCollision.none = true;
+
+            // Verifica se é um SecondEnemy
+            const isSecondEnemy = enemy.texture && enemy.texture.key === 'secondEnemy';
+            
+            if (isSecondEnemy) {
+                // Lógica para SecondEnemy
+                enemy.health--;
+                enemy.setTint(0xff0000); // Feedback visual de dano
+                
+                this.time.delayedCall(100, () => {
+                    if (enemy.active) {
+                        enemy.setTint(GameOptions.secondEnemy.color);
+                    }
+                });
+
+                if (enemy.health <= 0) {
+                    // Recompensa maior (5 moedas + XP especial)
+                    this.spawnCoinCluster(enemy.x, enemy.y, 5);
+                    this.addXP(GameOptions.secondEnemy.xpReward);
+                    enemy.destroy();
+                }
+            } else {
+                // Lógica para inimigos normais
+                this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                enemy.destroy();
+            }
         });
 
         // Player vs Coin 
         this.physics.add.collider(this.player, this.coinGroup, (player, coin) => {
-            this.playerXP += 10;
+            this.playerXP += 10 + this.coinXPBonus;
 
             if (this.playerXP >= this.nextLevelXP) {
                 this.levelUP();
@@ -503,26 +664,55 @@ class PlayGame extends Phaser.Scene {
             coin.body.checkCollision.none = true;
         });
     }
+
+    spawnCoinCluster(x, y, count) {
+        for (let i = 0; i < count; i++) {
+            const coin = this.physics.add.sprite(x, y, 'coin')
+                .setDisplaySize(30, 30)
+                .setSize(30, 30);
+            this.coinGroup.add(coin);
+        }
+    }
     
     handlePlayerMovement() {
         if (!this.player) return;
 
+        let direction = null;
         let movementDirection = new Phaser.Math.Vector2(0, 0);
         if (this.controlKeys.right.isDown) {
             movementDirection.x++;
+            direction = 'right';
         }
         if (this.controlKeys.left.isDown) {
             movementDirection.x--;
+            direction = 'left';
         }
         if (this.controlKeys.up.isDown) {
             movementDirection.y--;
+            direction = 'up';
         }
         if (this.controlKeys.down.isDown) {
             movementDirection.y++;
+            direction = 'down';
         }
 
         movementDirection.normalize();
         this.player.setVelocity(movementDirection.x * GameOptions.playerSpeed, movementDirection.y * GameOptions.playerSpeed);
+
+        if (direction) {
+            this.lastDirection = direction;
+            this.player.anims.play(`walk-${direction}`, true);
+        } else {
+            // Idle frame based on last direction
+            const idleFrames = {
+                up: 12,
+                down: 0,
+                left: 8,
+                right: 4
+            };
+            this.player.anims.stop();
+            this.player.setFrame(idleFrames[this.lastDirection]);
+        }
     }
 
     collectCoins() {
@@ -532,7 +722,7 @@ class PlayGame extends Phaser.Scene {
         const coinsInCircle = this.physics.overlapCirc(this.player.x, this.player.y, GameOptions.magnetRadius, true, true);
         coinsInCircle.forEach((body) => {
             const bodySprite = body.gameObject;
-            if (bodySprite.texture.key == 'coin'){
+            if (bodySprite.texture.key == 'coin') {
                 this.physics.moveToObject(bodySprite, this.player, 500);
             }
         });
@@ -543,8 +733,93 @@ class PlayGame extends Phaser.Scene {
         this.playerXP -= this.nextLevelXP;
         this.nextLevelXP = Math.floor(this.nextLevelXP * 1.2);
         this.updateLevelText(); // This now updates both level and XP bar
+        this.upgradeTime();
     }
-    
+
+    upgradeTime() {
+        this.isPaused = true;
+        this.physics.pause();
+        this.levelUpUI = []; // Keep track of all UI to remove later
+
+        const centerX = this.cameras.main.centerX;
+        const centerY = this.cameras.main.centerY;
+
+        // Background overlay
+        const overlay = this.add.rectangle(
+            centerX, centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.6
+        ).setScrollFactor(0).setDepth(2000);
+        this.levelUpUI.push(overlay);
+
+        // Title text
+        const title = this.add.text(centerX, centerY - 300, 'Subiu de Nível! Escolha uma melhoria:', {
+            fontSize: '36px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
+        this.levelUpUI.push(title);
+
+        const shuffled = Phaser.Utils.Array.Shuffle(this.allUpgrades);
+        const upgrades = shuffled.slice(0, 3);
+
+        const boxWidth = 400;
+        const boxHeight = 600;
+        const spacing = 40;
+        const totalWidth = (boxWidth * upgrades.length) + (spacing * (upgrades.length - 1));
+        const startX = centerX - totalWidth / 2 + boxWidth / 2;
+
+        upgrades.forEach((upgrade, index) => {
+            const boxX = startX + index * (boxWidth + spacing);
+            const boxY = centerY + 50;
+
+            // Box background
+            const box = this.add.rectangle(
+                boxX, boxY,
+                boxWidth, boxHeight,
+                0x222222,
+                1
+            ).setStrokeStyle(4, 0xffffff)
+                .setScrollFactor(0)
+                .setInteractive()
+                .setDepth(2001)
+                .on('pointerover', () => {
+                    box.setFillStyle(0x444444);
+                })
+                .on('pointerout', () => {
+                    box.setFillStyle(0x222222);
+                })
+                .on('pointerdown', () => {
+                    upgrade.effect();
+                    this.resumeGameAfterLevelUp();
+                });
+
+            // Text inside the box
+            const text = this.add.text(boxX, boxY, upgrade.label, {
+                fontSize: '30px',
+                fill: '#ffff00',
+                fontFamily: 'Arial',
+                align: 'center',
+                wordWrap: { width: boxWidth - 100 }
+            }).setOrigin(0.5)
+                .setScrollFactor(0)
+                .setDepth(2002);
+
+            this.levelUpUI.push(box, text);
+        });
+    }
+
+    resumeGameAfterLevelUp() {
+        this.isPaused = false;
+        this.physics.resume();
+        this.levelUpUI.forEach(el => el.destroy());
+        this.levelUpUI = [];
+        this.updateHealthBar();
+        this.updateLevelText();
+    }
+
     moveEnemies() {
         if (!this.player) return;
 
@@ -556,6 +831,8 @@ class PlayGame extends Phaser.Scene {
     }
 
     updateGameTimer(delta) {
+        if (this.isPaused) return; // ✅ Don't progress timer when paused
+
         this.elapsedTime += delta;
 
         if (Math.floor(this.elapsedTime / 1000) > Math.floor((this.elapsedTime - delta) / 1000)) {
@@ -569,7 +846,7 @@ class PlayGame extends Phaser.Scene {
 
     gameOver() {
         this.physics.pause();
-        
+
         if (this.player) {
             this.player.setTint(0xff0000);
             this.player.setAlpha(0.7);
@@ -583,8 +860,8 @@ class PlayGame extends Phaser.Scene {
             centerX,
             centerY - 50,
             'GAME OVER',
-            { 
-                fontSize: '64px', 
+            {
+                fontSize: '64px',
                 fill: '#ff0000',
                 fontFamily: 'Arial',
                 stroke: '#000000',
@@ -597,8 +874,8 @@ class PlayGame extends Phaser.Scene {
             centerX,
             centerY + 50,
             'Pressione R para reiniciar',
-            { 
-                fontSize: '24px', 
+            {
+                fontSize: '24px',
                 fill: '#ffffff',
                 fontFamily: 'Arial'
             }
@@ -607,12 +884,11 @@ class PlayGame extends Phaser.Scene {
         // Fade-in effect
         this.gameOverText.setAlpha(0);
         this.restartText.setAlpha(0);
-        
+
         if (this.tweens) {
             this.tweens.add({
                 targets: [this.gameOverText, this.restartText],
                 alpha: 1,
-                duration: 500,
                 ease: 'Linear'
             });
         }
@@ -624,7 +900,7 @@ class PlayGame extends Phaser.Scene {
 
         // Completa a barra de tempo
         this.timeBar.clear()
-        .fillStyle(0xff0000, 1)
-        .fillRect(0, 0, this.cameras.main.width * 0.9, 20);
+            .fillStyle(0xff0000, 1)
+            .fillRect(0, 0, this.cameras.main.width * 0.9, 20);
     }
 }
