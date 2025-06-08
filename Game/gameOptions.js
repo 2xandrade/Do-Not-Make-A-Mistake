@@ -4,13 +4,9 @@
 var GameOptions = {
 
     gameSize : {
-<<<<<<< HEAD
+
         width               : 1526,      // width of the game, in pixels
         height              : 1024       // height of the game, in pixels
-=======
-        width               : 1200,      // width of the game, in pixels
-        height              : 1200       // height of the game, in pixels
->>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
     },
     gameBackgroundColor     : 0x222222, // game background color
 
@@ -28,7 +24,7 @@ var GameOptions = {
         maxActive: 3,              // Máximo de 3 inimigos simultâneos
         
         // Atributos do inimigo
-        texture: 'secondEnemy',    // Textura no pré-carregamento
+        texture: 'gatoPernas',    // Textura no pré-carregamento
         health: 3,                 // Leva 3 tiros para morrer
         damage: 2,                 // Dano ao jogador (o dobro dos normais)
         speed: 70,                // Velocidade (mais rápido que inimigos normais)
