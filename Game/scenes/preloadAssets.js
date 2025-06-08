@@ -10,6 +10,12 @@ class PreloadAssets extends Phaser.Scene {
         });
     }
 
+    init(data) {
+        if (data && data.characterIndex !== undefined) {
+            this.characterIndexToLoad = data.characterIndex;
+        }
+    }
+
     // method to be called during class preloading
     preload() {
 
@@ -43,6 +49,6 @@ class PreloadAssets extends Phaser.Scene {
     create() {
 
         // start PlayGame scene
-        this.scene.start('PlayGame');
+        this.scene.start('PlayGame', { characterIndex: this.characterIndexToLoad });
     }
 }

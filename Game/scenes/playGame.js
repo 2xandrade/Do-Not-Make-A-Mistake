@@ -9,6 +9,10 @@ class PlayGame extends Phaser.Scene {
     bulletGroup;
     coinGroup;
 
+    // Adicionadas para gerenciar a seleção do personagem
+    selectedSpriteKey; // armazena "paladinoSprites", "bardoSprites", etc.
+    selectedCharacterIndex = 0; // armazena o índice numérico (0, 1, 2, 3)
+    
     // Coins
     coinXPBonus = 0;
     doubleCoinChance = 0; // 0 = 0%
@@ -89,6 +93,25 @@ class PlayGame extends Phaser.Scene {
         super({
             key: 'PlayGame'
         });
+    }
+
+    init(data) {
+        // Define as chaves dos sprites dos personagens, devem corresponder ao PreloadAssets.js e MainMenu.js
+        const characterSpriteKeys = [
+            "paladinoSprites",
+            "bardoSprites",
+            "arqueiraSprites",
+            "ladinaSprites"
+        ];
+
+        if (data && data.characterIndex !== undefined) {
+            this.selectedCharacterIndex = data.characterIndex; // armazena o índice numérico
+            // usa o índice para obter a chave do spritesheet correspondente
+            this.selectedSpriteKey = characterSpriteKeys[data.characterIndex] || "paladinoSprites";
+        } else {
+            this.selectedCharacterIndex = 0; // padrão primeiro personagem
+            this.selectedSpriteKey = "paladinoSprites"; // padrão se nenhum índice for passado
+        }
     }
 
     // method to be called once the instance has been created
@@ -198,7 +221,7 @@ class PlayGame extends Phaser.Scene {
         //     frames: this.anims.generateFrameNumbers('gatoCapuzSprites', { frames: [0, 1] }),
         //     frameRate: 2,
         //     repeat: -1
-        // });
+        // })
 
     }
 
