@@ -4,8 +4,13 @@
 var GameOptions = {
 
     gameSize : {
+<<<<<<< HEAD
+        width               : 1526,      // width of the game, in pixels
+        height              : 1024       // height of the game, in pixels
+=======
         width               : 1200,      // width of the game, in pixels
         height              : 1200       // height of the game, in pixels
+>>>>>>> 751032238dec3b864e6adc1fe2eb7977231efe13
     },
     gameBackgroundColor     : 0x222222, // game background color
 

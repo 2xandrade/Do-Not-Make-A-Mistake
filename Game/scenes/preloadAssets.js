@@ -13,20 +13,30 @@ class PreloadAssets extends Phaser.Scene {
     // method to be called during class preloading
     preload() {
 
-        // load images
-        // NOTE: These asset paths point to files not included in the blog post code.
-        // You will need to provide these image files in an 'assets/sprites/' directory.
-        this.load.image('enemy', 'assets/sprites/enemy.png');      // the big circle
-        this.load.image('player', 'assets/sprites/paladinoSprites.png');    // the player
-        this.load.image('bullet', 'assets/sprites/bullet.png');    // the spike
+        const commonSpriteSheetConfig = { frameWidth: 200, frameHeight: 200 };
+
+        const spritesheets = [
+            // Inimigos
+            { key: 'gatoCapuz', path: 'assets/sprites/inimigos/gatoCapuzSprites.png' },
+            { key: 'gatoPernas', path: 'assets/sprites/inimigos/gatoPernasSprites.png' },
+            { key: 'gatoPreto', path: 'assets/sprites/inimigos/gatoPretoSprites.png' },
+            { key: 'gatoSlime', path: 'assets/sprites/inimigos/gatoSlimeSprites.png' },
+            // Personagens
+            { key: 'paladinoSprites', path: 'assets/sprites/personagens/paladinoSprites.png' },
+            { key: 'ladinaSprites', path: 'assets/sprites/personagens/ladinaSprites.png' },
+            { key: 'arqueiraSprites', path: 'assets/sprites/personagens/arqueiraSprites.png' },
+            { key: 'bardoSprites', path: 'assets/sprites/personagens/bardoSprites.png' },
+            // Miscellaneous
+            { key: 'armas', path: 'assets/sprites/armas/armasSprite.png' }
+        ];
+
+        spritesheets.forEach(sheet => {
+            this.load.spritesheet(sheet.key, sheet.path, commonSpriteSheetConfig);
+        });
+
         this.load.image('coin', 'assets/sprites/coin.png');
         this.load.image('tiles', 'assets/sprites/grassy_field.png');
         this.load.image('secondEnemy', 'assets/sprites/pedra.png');
-    
-        this.load.spritesheet('paladinoSprites', 'assets/sprites/paladinoSprites.png', {
-            frameWidth: 200,  // Ajuste conforme seu sprite
-            frameHeight: 200,
-        });
     }
 
     // method to be executed when the scene is created
