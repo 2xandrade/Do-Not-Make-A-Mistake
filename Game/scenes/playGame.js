@@ -235,6 +235,8 @@ class PlayGame extends Phaser.Scene {
     }
 
     mapGeneration() {
+        this.tileSize = 256;
+
         this.tileMap = this.make.tilemap({
             tileWidth: this.tileSize,
             tileHeight: this.tileSize,
@@ -242,25 +244,32 @@ class PlayGame extends Phaser.Scene {
             height: 1000
         });
 
-        this.tileset = this.tileMap.addTilesetImage('tiles', null, this.tileSize, this.tileSize);
+        this.tileset = this.tileMap.addTilesetImage(
+            'tileset',
+            null,
+            this.tileSize,
+            this.tileSize
+        );
+
         this.tileLayer = this.tileMap.createBlankLayer('Ground', this.tileset);
-        this.tileLayer.setDepth(-10); // Set behind everything
+        this.tileLayer.setDepth(-10);
 
-        // Initially fill a few tiles around the player
+        this.tileWeightPool = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 11, 11, 11,
+            1, 2, 3, 4, 5, 6, 7,
+            8, 9, 10
+        ];
+
         this.updateTilemapAroundPlayer();
-
     }
 
-    updateTilemapAroundPlayer(radius = 3) {
+    updateTilemapAroundPlayer(radius = 20) {
         const playerTileX = Math.floor(this.player.x / this.tileSize);
         const playerTileY = Math.floor(this.player.y / this.tileSize);
 
-        // Only regenerate if player entered a new tile
-        if (this.lastTileX === playerTileX && this.lastTileY === playerTileY) {
-            return; // Player is still in same tile — skip update
-        }
+        if (this.lastTileX === playerTileX && this.lastTileY === playerTileY) return;
 
-        // Save new position
         this.lastTileX = playerTileX;
         this.lastTileY = playerTileY;
 
@@ -271,7 +280,7 @@ class PlayGame extends Phaser.Scene {
                 const key = `${tileX},${tileY}`;
 
                 if (!this.tileCache.has(key)) {
-                    const tileIndex = 0;
+                    const tileIndex = Phaser.Utils.Array.GetRandom(this.tileWeightPool);
                     this.tileLayer.putTileAt(tileIndex, tileX, tileY);
                     this.tileCache.add(key);
                 }
@@ -279,7 +288,7 @@ class PlayGame extends Phaser.Scene {
         }
     }
 
-    cleanFarTiles(playerX, playerY, maxDistance = 10) {
+    cleanFarTiles(playerX, playerY, maxDistance = 20) {
         const playerTileX = Math.floor(playerX / this.tileSize);
         const playerTileY = Math.floor(playerY / this.tileSize);
 
@@ -634,7 +643,7 @@ class PlayGame extends Phaser.Scene {
                         bullet.setSize(100, 100);
                         this.bulletGroup.add(bullet);
                         this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
-                        this.time.delayedCall(3000, () => {
+                        this.time.delayedCall(4000, () => {
                             if (bullet && bullet.active) {
                                 bullet.destroy();
                             }
