@@ -50,8 +50,14 @@ class PlayGame extends Phaser.Scene {
         // Camera setup
         this.cameras.main.setScroll(0, 0); // Lock scrolling at the top
 
+        this.selectedCharacter = 'ladinaSprites';
+
         // Game Objects
+<<<<<<< Updated upstream
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, 'player');
+=======
+        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter);
+>>>>>>> Stashed changes
         this.player.setDisplaySize(80, 80);
         this.player.setSize(80, 80);
         this.mapGeneration();
@@ -90,6 +96,48 @@ class PlayGame extends Phaser.Scene {
         this.timeBarBg.setDepth(1000);
         this.timeBar.setDepth(1001);
         this.timeText.setDepth(1002);
+<<<<<<< Updated upstream
+=======
+
+        const playerWalkAnimations = [
+            { key: 'walk-down', frames: [0, 1, 2, 3] },
+            { key: 'walk-right', frames: [4, 5, 6, 7] },
+            { key: 'walk-left', frames: [8, 9, 10, 11] },
+            { key: 'walk-up', frames: [12, 13, 14, 15] }
+        ];
+
+        playerWalkAnimations.forEach(anim => {
+            this.anims.create({
+                key: anim.key,
+                frames: this.anims.generateFrameNumbers(this.selectedCharacter, { frames: anim.frames }),
+                frameRate: 6,
+                repeat: -1
+            });
+        });
+
+        // GatoSlime animation (kept separate due to different frameRate)
+        this.anims.create({
+            key: 'gatoSlime',
+            frames: this.anims.generateFrameNumbers('gatoSlime', { start: 0, end: 7 }),
+            frameRate: 8,
+            repeat: -1
+        });
+
+        // this.anims.create({
+        //     key: 'gatoCapuz',
+        //     frames: this.anims.generateFrameNumbers('gatoCapuzSprites', { frames: [0, 1] }),
+        //     frameRate: 2,
+        //     repeat: -1
+        // });
+
+        // this.anims.create({
+        //     key: 'gatoPernas',
+        //     frames: this.anims.generateFrameNumbers('gatoPernasSprites', { start: 0, end: 3 }),
+        //     frameRate: 9,
+        //     repeat: -1
+        // });
+
+>>>>>>> Stashed changes
     }
 
     update(time, delta) {
@@ -118,7 +166,6 @@ class PlayGame extends Phaser.Scene {
                 this.updateTimeBar();
             }
         }
-    
 
         // Player movement
         this.handlePlayerMovement();
@@ -451,8 +498,15 @@ class PlayGame extends Phaser.Scene {
                         break;
                 }
 
+<<<<<<< Updated upstream
                 const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'enemy');
+=======
+                const enemy = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'gatoSlime');
+                enemy.setDisplaySize(200, 200);
+                enemy.setSize(100, 100);
+>>>>>>> Stashed changes
                 this.enemyGroup.add(enemy);
+                enemy.play('gatoSlime');
             }
         });
 
@@ -463,9 +517,42 @@ class PlayGame extends Phaser.Scene {
             callback: () => {
                 const closestEnemy = this.physics.closest(this.player, this.enemyGroup.getChildren());
                 if (closestEnemy !== null) {
+<<<<<<< Updated upstream
                     const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet');
                     this.bulletGroup.add(bullet);
                     this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+=======
+                    // Calculate the direction towards the closest enemy
+                    const dx = closestEnemy.x - this.player.x;
+                    const dy = closestEnemy.y - this.player.y;
+
+                    let bulletFrame = 1; // Default to right-facing (sprite code 1)
+
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        // More horizontal movement
+                        if (dx > 0) {
+                            bulletFrame = 1; // Right-facing (sprite code 1)
+                        } else {
+                            bulletFrame = 3; // Left-facing (sprite code 3)
+                        }
+                    } else {
+                        // More vertical movement (or equal)
+                        if (dy > 0) {
+                            bulletFrame = 4; // Down-facing (sprite code 4)
+                        } else {
+                            bulletFrame = 2; // Up-facing (sprite code 2)
+                        }
+                    }
+
+                    for (let i = 0; i < this.playerBulletCount; i++) {
+                        // Create the bullet with the determined frame
+                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'armas', bulletFrame);
+                        bullet.setDisplaySize(100, 100);
+                        bullet.setSize(100, 100);
+                        this.bulletGroup.add(bullet);
+                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+                    }
+>>>>>>> Stashed changes
                 }
             },
         });
