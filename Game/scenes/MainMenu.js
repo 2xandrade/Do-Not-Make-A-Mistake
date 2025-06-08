@@ -46,14 +46,14 @@ class MainMenu extends Phaser.Scene {
     this.updateSelectedCharacterDisplay();
 
     const buttonY = centerY + 180;
-    this.selectButton = this.add.image(centerX - 100, buttonY, 'personagensButton')
+    this.selectButton = this.add.image(centerX - 200, buttonY, 'personagensButton')
       .setInteractive({ useHandCursor: true })
-      .setDisplaySize(150, 60)
+      .setDisplaySize(400, 200)
       .on('pointerdown', () => this.toggleCharacterSelection());
 
-    this.startButton = this.add.image(centerX + 100, buttonY, 'startButton')
+    this.startButton = this.add.image(centerX + 200, buttonY, 'startButton')
       .setInteractive({ useHandCursor: true })
-      .setDisplaySize(150, 60)
+      .setDisplaySize(300, 150)
       .on('pointerdown', () => this.startGame());
 
     this.createCharacterSelection(centerX, centerY);
@@ -91,7 +91,7 @@ class MainMenu extends Phaser.Scene {
   }
 
   updateSelectedCharacterDisplay() {
-    this.selectedCharDisplay.removeAll();
+    this.selectedCharDisplay.removeAll(true);
     const char = MainMenu.CHARACTERS[this.selectedCharacter];
 
     const sprite = this.safeLoadSprite(0, 0, char.key, char.frameMenu, 150, char.color);
@@ -99,8 +99,6 @@ class MainMenu extends Phaser.Scene {
 
     const name = this.add.text(0, 100, char.name, MainMenu.TEXT_STYLES.characterName).setOrigin(0.5);
 
-    sprite.setPosition(0, 0); // centraliza corretamente
-    name.setPosition(0, 100);
     this.selectedCharDisplay.add([sprite, name]);
     this.selectedCharDisplay.setX(this.cameras.main.centerX);
     this.selectedCharDisplay.setY(this.cameras.main.centerY - 40);
@@ -119,7 +117,9 @@ class MainMenu extends Phaser.Scene {
 
     MainMenu.CHARACTERS.forEach((char, i) => {
       const x = startX + spacing * i;
-      const container = this.add.container(x, centerY);
+      const container = this.add.container(0, 0);
+      container.setPosition(x, centerY);
+    this.selectionContainer.add(container);
       const frame = this.safeLoadImage(0, 0, "frame", 160);
       const sprite = this.safeLoadSprite(0, 0, char.key, char.frameMenu, 120, char.color);
       const name = this.add.text(0, 85, char.name, MainMenu.TEXT_STYLES.characterNameSmall).setOrigin(0.5);
