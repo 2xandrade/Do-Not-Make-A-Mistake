@@ -178,7 +178,7 @@ class PlayGame extends Phaser.Scene {
             frameRate: 8,
             repeat: -1
         });
-
+      
         this.anims.create({
             key: 'npcSprites',
             frames: this.anims.generateFrameNumbers('npcSprites', { frames: [0, 1] }),
@@ -199,8 +199,6 @@ class PlayGame extends Phaser.Scene {
         //     frameRate: 2,
         //     repeat: -1
         // });
-
-        
 
     }
 
@@ -691,7 +689,6 @@ class PlayGame extends Phaser.Scene {
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
             bullet.destroy();
             const isSecondEnemy = enemy.texture && enemy.texture.key === 'gatoPernas';
-            
             if (!isSecondEnemy) {
                     enemy.body.checkCollision.none = true;
             }
@@ -711,7 +708,7 @@ class PlayGame extends Phaser.Scene {
                     bullet.destroy();
                 }
             } else {
-                 this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                this.spawnCoinCluster(enemy.x, enemy.y, 1);
                 enemy.destroy();
                 bullet.destroy();
             }
