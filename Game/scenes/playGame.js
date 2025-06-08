@@ -12,10 +12,7 @@ class PlayGame extends Phaser.Scene {
     // Adicionadas para gerenciar a seleção do personagem
     selectedSpriteKey; // armazena "paladinoSprites", "bardoSprites", etc.
     selectedCharacterIndex = 0; // armazena o índice numérico (0, 1, 2, 3)
-    
-    // Coins
-    coinXPBonus = 0;
-    doubleCoinChance = 0; // 0 = 0%
+
 
     // Player Stats
     playerHP = 5; // Initial health points
@@ -57,7 +54,7 @@ class PlayGame extends Phaser.Scene {
     allUpgrades = [
         {
             label: 'Correr mais rápido',
-            effect: () => GameOptions.playerSpeed += 10,
+            effect: () => GameOptions.playerSpeed += 500,
         },
         {
             label: '+1 HP',
@@ -120,6 +117,12 @@ class PlayGame extends Phaser.Scene {
 
         this.selectedCharacter = this.selectedSpriteKey;
 
+        // Stats Padrão do Personagem
+        GameOptions.playerSpeed = 100;
+        GameOptions.bulletSpeed = 200;
+        GameOptions.magnetRadius = 100;
+
+
         // Game Objects
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter);
         this.player.setDisplaySize(80, 80);
@@ -138,6 +141,9 @@ class PlayGame extends Phaser.Scene {
         this.playerLVL = 1;
         this.playerXP = 0;
         this.nextLevelXP = 100;
+        this.playerSpeed = GameOptions.playerSpeed;
+        this.bulletSpeed = GameOptions.bulletSpeed;
+        this.magnetRadius = GameOptions.magnetRadius;
 
         // NPC
         this.npcGroup = this.physics.add.group();
@@ -146,6 +152,10 @@ class PlayGame extends Phaser.Scene {
         this.totalGameTime = 900000; // 15 minutes in milliseconds
         this.totalMinutes = 15;
         this.elapsedTime = 0;
+
+        // Coins
+        this.coinXPBonus = 0;
+        this.doubleCoinChance = 0; // 0 = 0%
 
 
         // UI Creation
@@ -200,7 +210,7 @@ class PlayGame extends Phaser.Scene {
             frameRate: 8,
             repeat: -1
         });
-      
+
         this.anims.create({
             key: 'npcSprites',
             frames: this.anims.generateFrameNumbers('npcSprites', { frames: [0, 1] }),
@@ -253,14 +263,14 @@ class PlayGame extends Phaser.Scene {
         }
 
         if (!this.secondEnemySpawned && this.elapsedTime >= 180000) {
-                this.spawnSecondEnemy();
+            this.spawnSecondEnemy();
         }
 
         if (this.npcArrow && this.npcArrow.target && this.npcArrow.target.active) {
             const dx = this.npcArrow.target.x - this.player.x;
             const dy = this.npcArrow.target.y - this.player.y;
             const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.npcArrow.target.x, this.npcArrow.target.y);
-            
+
             this.npcArrow.setRotation(angle);
             this.npcArrow.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
         } else {
@@ -514,31 +524,31 @@ class PlayGame extends Phaser.Scene {
     }
 
     spawnSecondEnemy() {
-        
+
         // Verifica limite de inimigos ativos
-        const activeSecondEnemies = this.enemyGroup.getChildren().filter(e => 
+        const activeSecondEnemies = this.enemyGroup.getChildren().filter(e =>
             e.texture.key === 'gatoPernas'
         ).length;
-        
+
         if (activeSecondEnemies >= GameOptions.secondEnemy.maxActive) return;
-        
+
         // Posicionamento fora da tela
         const side = Phaser.Math.Between(0, 3);
         let x, y;
         const padding = 100;
         const cam = this.cameras.main;
-        
-        switch(side) {
+
+        switch (side) {
             case 0: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
-                    y = cam.scrollY - padding; break; // Topo
+                y = cam.scrollY - padding; break; // Topo
             case 1: x = cam.scrollX + cam.width + padding;
-                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Direita
+                y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Direita
             case 2: x = Phaser.Math.Between(cam.scrollX - padding, cam.scrollX + cam.width + padding);
-                    y = cam.scrollY + cam.height + padding; break; // Fundo
+                y = cam.scrollY + cam.height + padding; break; // Fundo
             case 3: x = cam.scrollX - padding;
-                    y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Esquerda
+                y = Phaser.Math.Between(cam.scrollY - padding, cam.scrollY + cam.height + padding); break; // Esquerda
         }
-        
+
         // Criação do inimigo
         const enemy = this.physics.add.sprite(x, y, 'gatoPernas');
         enemy.setDisplaySize(150, 150);
@@ -546,7 +556,7 @@ class PlayGame extends Phaser.Scene {
         enemy.setTint(GameOptions.secondEnemy.color);
         enemy.health = GameOptions.secondEnemy.health;
         enemy.damage = GameOptions.secondEnemy.damage || 2; // Dano padrão se não definido
-        
+
         this.enemyGroup.add(enemy);
     }
 
@@ -652,8 +662,8 @@ class PlayGame extends Phaser.Scene {
             }
         });
 
-         // Timer para SecondEnemy (inicia após 3 minutos)
-         this.time.delayedCall(GameOptions.secondEnemy.spawnTime, () => {
+        // Timer para SecondEnemy (inicia após 3 minutos)
+        this.time.delayedCall(GameOptions.secondEnemy.spawnTime, () => {
             this.time.addEvent({
                 delay: GameOptions.secondEnemy.spawnInterval, // Intervalo entre spawns
                 loop: true,
@@ -712,7 +722,7 @@ class PlayGame extends Phaser.Scene {
             bullet.destroy();
             const isSecondEnemy = enemy.texture && enemy.texture.key === 'gatoPernas';
             if (!isSecondEnemy) {
-                    enemy.body.checkCollision.none = true;
+                enemy.body.checkCollision.none = true;
             }
 
             if (isSecondEnemy) {
@@ -769,7 +779,7 @@ class PlayGame extends Phaser.Scene {
             this.coinGroup.add(coin);
         }
     }
-    
+
     handlePlayerMovement() {
         if (!this.player) return;
 
@@ -972,6 +982,7 @@ class PlayGame extends Phaser.Scene {
 
     gameOver() {
         this.physics.pause();
+
 
         if (this.player) {
             this.player.setTint(0xff0000);
