@@ -26,6 +26,7 @@ class PreloadAssets extends Phaser.Scene {
             { key: 'ladinaSprites', path: 'assets/sprites/personagens/ladinaSprites.png' },
             { key: 'arqueiraSprites', path: 'assets/sprites/personagens/arqueiraSprites.png' },
             { key: 'bardoSprites', path: 'assets/sprites/personagens/bardoSprites.png' },
+            { key: 'npcSprites', path: 'assets/sprites/npc/npcSprites.png' },
             // Miscellaneous
             { key: 'armas', path: 'assets/sprites/armas/armasSprite.png' }
         ];
@@ -35,8 +36,7 @@ class PreloadAssets extends Phaser.Scene {
         });
 
         this.load.image('coin', 'assets/sprites/coin.png');
-        this.load.image('tiles', 'assets/sprites/grassy_field.png');
-        this.load.image('secondEnemy', 'assets/sprites/pedra.png');
+        this.load.image('tileset', 'assets/sprites/mapa/mapaSprites.png');
     }
 
     // method to be executed when the scene is created
