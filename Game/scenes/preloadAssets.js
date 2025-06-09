@@ -23,6 +23,7 @@ class PreloadAssets extends Phaser.Scene {
 
         const spritesheets = [
             // Inimigos
+            { key: 'boss', path: 'assets/sprites/inimigos/bossSprites.png' },
             { key: 'gatoCapuz', path: 'assets/sprites/inimigos/gatoCapuzSprites.png' },
             { key: 'gatoPernas', path: 'assets/sprites/inimigos/gatoPernasSprites.png' },
             { key: 'gatoPreto', path: 'assets/sprites/inimigos/gatoPretoSprites.png' },
