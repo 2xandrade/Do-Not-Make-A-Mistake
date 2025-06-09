@@ -652,7 +652,7 @@ class PlayGame extends Phaser.Scene {
     moveEnemies() {
         if (!this.player) return;
         this.enemyGroup.getChildren().forEach((enemy) => {
-            if (enemy.active) this.physics.moveToObject(enemy, thsis.player, GameOptions.enemySpeed);
+            if (enemy.active) this.physics.moveToObject(enemy, this.player, GameOptions.enemySpeed);
         });
     }
     updateGameTimer(delta) {
