@@ -16,6 +16,12 @@ Cada escolha influencia o julgamento final de sua existência, e apenas os mais 
 
 ---
 
+### Site para jogar
+
+Você pode acessar o jogo através do site: https://2xandrade.github.io/Do-Not-Make-A-Mistake/
+
+---
+
 ### Controles Básicos
 
 * **Seleção de Personagem**: Antes de iniciar o jogo, o jogador poderá escolher entre os quatro personagens disponíveis: Ladina, Arqueira, Paladino e Bardo.
