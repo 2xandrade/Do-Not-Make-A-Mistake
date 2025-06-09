@@ -65,6 +65,10 @@ class PlayGame extends Phaser.Scene {
     referenceX = 0;
     referenceY = 0;
 
+    secondEnemySpawned = false;
+    thirdEnemySpawned = false;
+    fourthEnemySpawned = false;
+
     // --- Upgrades ---
     allUpgrades = [
         { label: 'Correr mais rápido', type: 'speed', spriteKey: 'upgrade_speed', effect: () => GameOptions.playerSpeed += 10 },
@@ -143,6 +147,23 @@ class PlayGame extends Phaser.Scene {
         this.enemyGroup.setDepth(100);
         this.timeBarBg.setDepth(1000); this.timeBar.setDepth(1001); this.timeText.setDepth(1002);
 
+        this.time.addEvent({
+            delay: 5000, // Verifica a cada 5 segundos
+            loop: true,
+            callback: () => {
+                if (this.activeEnemies.second < 3) this.spawnSecondEnemy();
+                if (this.activeEnemies.third < 3) this.spawnThirdEnemy();
+                if (this.activeEnemies.fourth < 3) this.spawnFourthEnemy();
+            }
+        });
+        
+        this.activeEnemies = {
+            second: 0,
+            third: 0,
+            fourth: 0
+        };
+
+
         // Animations
         [
             { key: 'walk-down', frames: [0, 1, 2, 3] },
@@ -216,6 +237,21 @@ class PlayGame extends Phaser.Scene {
             this.npcArrow.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
         } else {
             this.npcArrow?.setVisible(false);
+        }
+
+        if (!this.secondEnemySpawned && this.elapsedTime >= GameOptions.secondEnemy.spawnTime) {
+            this.spawnSecondEnemy();
+            this.secondEnemySpawned = true; // Marca como spawnado
+        }
+
+        if (!this.thirdEnemySpawned && this.elapsedTime >= GameOptions.thirdEnemy.spawnTime) {
+            this.spawnThirdEnemy();
+            this.thirdEnemySpawned = true;
+        }
+
+        if (!this.fourthEnemySpawned && this.elapsedTime >= GameOptions.fourthEnemy.spawnTime) {
+            this.spawnFourthEnemy();
+            this.fourthEnemySpawned = true;
         }
 
         this.handlePlayerMovement();
@@ -362,7 +398,8 @@ class PlayGame extends Phaser.Scene {
     spawnSecondEnemy() {
         const opt = GameOptions.secondEnemy;
         const active = this.enemyGroup.getChildren().filter(e => e.texture.key === opt.texture && e.active).length;
-        if (active >= opt.maxActive) return;
+        if (active >= opt.maxActive || (this.activeEnemies && this.activeEnemies.second >= 3)) return;
+
 
         const { x, y } = this._randomOffscreenPosition();
         const enemy = this.physics.add.sprite(x, y, opt.texture);
@@ -370,16 +407,30 @@ class PlayGame extends Phaser.Scene {
         enemy.setSize(opt.size, opt.size);
         enemy.health = opt.health;
         enemy.damage = opt.damage;
+
+        enemy.type = 'second';
+
+        if (this.activeEnemies) {
+            this.activeEnemies.second++;
+        }
+
         if (enemy.anims && enemy.anims.animationManager.exists('gatoPernas')) {
             enemy.play('gatoPernas');
         }
         this.enemyGroup.add(enemy);
+
+        enemy.on('destroy', () => {
+            if (this.activeEnemies) {
+                this.activeEnemies.second--;
+                this.time.delayedCall(2000, () => this.spawnSecondEnemy()); // Respawn após 2 segundos
+            }
+        });
     }
 
     spawnThirdEnemy() {
         const opt = GameOptions.thirdEnemy;
         const active = this.enemyGroup.getChildren().filter(e => e.texture.key === opt.texture && e.active).length;
-        if (active >= opt.maxActive) return;
+        if (active >= opt.maxActive || (this.activeEnemies && this.activeEnemies.third >= 3)) return;
 
         const { x, y } = this._randomOffscreenPosition();
         const enemy = this.physics.add.sprite(x, y, opt.texture);
@@ -387,16 +438,30 @@ class PlayGame extends Phaser.Scene {
         enemy.setSize(opt.size, opt.size);
         enemy.health = opt.health;
         enemy.damage = opt.damage;
+
+        enemy.type = 'third';
+
+        if (this.activeEnemies) {
+            this.activeEnemies.third++;
+        }
+
         if (enemy.anims && enemy.anims.animationManager.exists('gatoPreto')) {
             enemy.play('gatoPreto');
         }
         this.enemyGroup.add(enemy);
+
+        enemy.on('destroy', () => {
+            if (this.activeEnemies) {
+                this.activeEnemies.third--;
+                this.time.delayedCall(2000, () => this.spawnThirdEnemy()); // Respawn após 2 segundos
+            }
+        });
     }
 
     spawnFourthEnemy() {
         const opt = GameOptions.fourthEnemy;
         const active = this.enemyGroup.getChildren().filter(e => e.texture.key === opt.texture && e.active).length;
-        if (active >= opt.maxActive) return;
+        if (active >= opt.maxActive || (this.activeEnemies && this.activeEnemies.fourth >= 3)) return;
 
         const { x, y } = this._randomOffscreenPosition();
         const enemy = this.physics.add.sprite(x, y, opt.texture);
@@ -404,10 +469,22 @@ class PlayGame extends Phaser.Scene {
         enemy.setSize(opt.size, opt.size);
         enemy.health = opt.health;
         enemy.damage = opt.damage;
+
+         enemy.type = 'fourth';
+
+        if (this.activeEnemies) {
+            this.activeEnemies.fourth++;
+        }
         if (enemy.anims && enemy.anims.animationManager.exists('gatoCapuz')) {
             enemy.play('gatoCapuz');
         }
         this.enemyGroup.add(enemy);
+        enemy.on('destroy', () => {
+            if (this.activeEnemies) {
+                this.activeEnemies.second--;
+                this.time.delayedCall(2000, () => this.spawnFourthEnemy()); // Respawn após 2 segundos
+            }
+        });
     }
 
     _randomOffscreenPosition() {
@@ -503,13 +580,76 @@ class PlayGame extends Phaser.Scene {
         this.physics.add.collider(this.player, this.enemyGroup, () => { this.takeDamage(); });
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
             bullet.destroy();
-            const isSecondEnemy = enemy.texture && enemy.texture.key === 'gatoPernas';
-            if (!isSecondEnemy) enemy.body.checkCollision.none = true;
-            if (isSecondEnemy) {
-                enemy.health--; enemy.setTint(0xff0000);
-                this.time.delayedCall(100, () => { if (enemy.active) enemy.setTint(GameOptions.secondEnemy.color); });
-                if (enemy.health <= 0) { this.spawnCoinCluster(enemy.x, enemy.y, 5); enemy.destroy(); bullet.destroy(); }
-            } else { this.spawnCoinCluster(enemy.x, enemy.y, 1); enemy.destroy(); bullet.destroy(); }
+            const enemyType = enemy.texture?.key;
+
+            // Define as propriedades baseado no tipo de inimigo
+            if (enemyType === 'gatoPernas') {
+                // Inimigo especial (segundo, terceiro ou quarto)
+                enemy.health--;
+                enemy.setTint(0xff0000);
+
+                let enemyColor;
+                    if (enemyType === 'gatoPernas') { // Aqui você precisaria diferenciar melhor os inimigos
+                        enemyColor = GameOptions.secondEnemy.color;
+                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
+                    }
+                
+                this.time.delayedCall(100, () => { 
+                    if (enemy.active) enemy.setTint(enemyColor); 
+                });
+                
+                if (enemy.health <= 0) {
+                    this.spawnCoinCluster(enemy.x, enemy.y, 5);
+                    enemy.destroy();
+                    bullet.destroy();
+                }
+            } else if (enemyType === 'gatoPreto') {
+                // Inimigo especial (segundo, terceiro ou quarto)
+                enemy.health--;
+                enemy.setTint(0xff0000);
+
+                let enemyColor;
+                    if (enemyType === 'gatoPreto') { // Aqui você precisaria diferenciar melhor os inimigos
+                        enemyColor = GameOptions.thirdEnemy.color;
+                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
+                    }
+                
+                this.time.delayedCall(100, () => { 
+                    if (enemy.active) enemy.setTint(enemyColor); 
+                });
+                
+                if (enemy.health <= 0) {
+                    this.spawnCoinCluster(enemy.x, enemy.y, 6);
+                    enemy.destroy();
+                    bullet.destroy();
+                }
+            } else if (enemyType === 'gatoCapuz') {
+                // Inimigo especial (segundo, terceiro ou quarto)
+                enemy.health--;
+                enemy.setTint(0xff0000);
+
+                let enemyColor;
+                    if (enemyType === 'gatoCapuz') { // Aqui você precisaria diferenciar melhor os inimigos
+                        enemyColor = GameOptions.fourthEnemy.color;
+                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
+                    }
+                
+                this.time.delayedCall(100, () => { 
+                    if (enemy.active) enemy.setTint(enemyColor); 
+                });
+                
+                if (enemy.health <= 0) {
+                    this.spawnCoinCluster(enemy.x, enemy.y, 8);
+                    enemy.destroy();
+                    bullet.destroy();
+                }
+            } else {
+                // Inimigo normal
+                enemy.body.checkCollision.none = true;
+                this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                enemy.destroy();
+                bullet.destroy();
+            }
         });
         this.physics.add.collider(this.player, this.coinGroup, (player, coin) => {
             this.playerXP += 10 + this.coinXPBonus;
