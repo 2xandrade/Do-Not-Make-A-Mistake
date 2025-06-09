@@ -49,15 +49,13 @@ Você pode acessar o jogo através do site: https://2xandrade.github.io/Do-Not-M
 
 * **Escolha de Herói:** Quatro personagens jogáveis (Paladino, Bardo, Ladina, Arqueira), cada um com questões pendentes e motivações únicas.
 * **Combate Roguelike:** Hordas de inimigos que ficam progressivamente mais fortes.
-* **Eventos Dinâmicos:** Encontros com eventos únicos e chefes a cada 3 minutos, culminando em um chefe final aos 15 minutos.
-* **Progressão de Personagem:** Ganho de EXP e escolha de novas armas/melhorias de habilidades.
-* **Melhorias Permanentes:** Desbloqueio de melhorias aplicáveis em todas as partidas futuras.
-* **Julgamento Moral:** Escolhas que influenciam o destino da alma do herói (redenção ou corrupção).
+* **Eventos Dinâmicos:** Encontros com eventos únicos e chefes a cada 3 minutos, culminando em um chefe final aos 12 minutos.
+* **Progressão de Personagem:** Ganho de EXP e escolha de novas melhorias de habilidades.
 
 ---
 
 ### Stack Tecnológica
 Tecnologias, frameworks e bibliotecas utilizadas no desenvolvimento do projeto:
 *   **Phaser e Javascript:** Responsável pela implementação das mecânicas e funcionalidades principais do jogo.
-*   **Bibliotecas:**
+*   **Bibliotecas:** Phaser
 *   **HTML e CSS:** Estruturação e estilização da interface
