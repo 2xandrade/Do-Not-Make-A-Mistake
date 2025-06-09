@@ -10,7 +10,7 @@ var GameOptions = {
 
     // BOSS ENEMIES CONFIG:
     secondEnemy: {
-        spawnTime: 180000,      // 3 min in ms
+        spawnTime: 180000,      // 3 min in ms  180000
         spawnInterval: 30000,   // 30 sec between spawns
         maxActive: 3,           // max simultaneous
         texture: 'gatoPernas',
@@ -21,25 +21,34 @@ var GameOptions = {
         xpReward: 50
     },
     thirdEnemy: {
-        spawnTime: 360000,      // 6 min in ms
+        spawnTime: 360000,      // 6 min in ms 360000
         spawnInterval: 45000,   // 45 sec between spawns
         maxActive: 3,
         texture: 'gatoPreto',
         health: 4,
-        damage: 3,
+        damage: 2,
         speed: 80,
         size: 80,
         xpReward: 60
     },
     fourthEnemy: {
-        spawnTime: 540000,      // 9 min in ms
+        spawnTime: 540000,      // 9 min in ms  540000
         spawnInterval: 30000,
         maxActive: 3,
         texture: 'gatoCapuz',
         health: 6,
-        damage: 4,
+        damage: 2,
         speed: 60,
         size: 80,
         xpReward: 80
+    },
+    fifthEnemy: {
+        spawnTime: 720000,      // 12 min in ms  720000
+        maxActive: 1,
+        texture: 'boss',
+        health: 100,
+        damage: 5,
+        speed: 30,
+        size: 150,
     }
 };
