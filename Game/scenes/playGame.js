@@ -69,6 +69,8 @@ class PlayGame extends Phaser.Scene {
     thirdEnemySpawned = false;
     fourthEnemySpawned = false;
 
+    bossSpawned = false; 
+
     // --- Upgrades ---
     allUpgrades = [
         { label: 'Correr mais rápido', type: 'speed', spriteKey: 'upgrade_speed', effect: () => GameOptions.playerSpeed += 10 },
@@ -160,7 +162,8 @@ class PlayGame extends Phaser.Scene {
         this.activeEnemies = {
             second: 0,
             third: 0,
-            fourth: 0
+            fourth: 0,
+            boss: 0,
         };
 
 
@@ -203,6 +206,12 @@ class PlayGame extends Phaser.Scene {
             key: 'gatoPreto',
             frames: this.anims.generateFrameNumbers('gatoPreto', { start: 0, end: 3 }),
             frameRate: 4,
+            repeat: -1
+        });
+        this.anims.create({
+            key: 'bossSprites',
+            frames: this.anims.generateFrameNumbers('bossSprites', { start: 0, end: 1 }),
+            frameRate: 2,
             repeat: -1
         });
     }
@@ -252,6 +261,11 @@ class PlayGame extends Phaser.Scene {
         if (!this.fourthEnemySpawned && this.elapsedTime >= GameOptions.fourthEnemy.spawnTime) {
             this.spawnFourthEnemy();
             this.fourthEnemySpawned = true;
+        }
+
+        if (!this.bossSpawned && this.elapsedTime >= GameOptions.fifthEnemy.spawnTime) {
+            this.spawnBoss();
+            this.bossSpawned = true;
         }
 
         this.handlePlayerMovement();
@@ -487,6 +501,51 @@ class PlayGame extends Phaser.Scene {
         });
     }
 
+    spawnBoss() {
+        if (this.bossSpawned || this.activeEnemies.boss > 0) return;
+
+        const opt = GameOptions.fifthEnemy;
+        const { x, y } = this._randomOffscreenPosition();
+        
+        const boss = this.physics.add.sprite(x, y, opt.texture)
+            .setDisplaySize(opt.size, opt.size)
+            .setSize(opt.size, opt.size);
+        
+        boss.health = opt.health;
+        boss.damage = opt.damage;
+        boss.type = 'boss';
+
+        // Efeito visual ao spawnar
+        boss.setAlpha(0);
+        this.tweens.add({
+            targets: boss,
+            alpha: 1,
+            duration: 2000,
+            ease: 'Power2'
+        });
+
+        this.activeEnemies.boss++;
+        this.bossSpawned = true;
+        this.enemyGroup.add(boss);
+
+        // Animação do boss
+        if (boss.anims && boss.anims.animationManager.exists('boss')) {
+            boss.play('boss');
+        }
+
+        this.enemyGroup.add(boss);
+
+        // Efeito sonoro ao spawnar (se tiver sistema de áudio)
+        // this.sound.play('bossSpawnSound');
+
+        boss.on('destroy', () => {
+            this.activeEnemies.boss--;
+            // Não faz respawn - boss aparece apenas uma vez
+            this.spawnCoinCluster(boss.x, boss.y, 20); // Muitas moedas ao derrotar o boss
+            // this.sound.play('bossDefeatSound');
+        });
+    }
+
     _randomOffscreenPosition() {
         const cam = this.cameras.main, padding = 100;
         const side = Phaser.Math.Between(0, 3);
@@ -643,6 +702,26 @@ class PlayGame extends Phaser.Scene {
                     enemy.destroy();
                     bullet.destroy();
                 }
+            } else if (enemyType === 'boss') {  // <--- ADICIONE AQUI
+                enemy.health--;
+                enemy.setTint(0xff0000);
+
+                // Efeito de hit
+                this.time.delayedCall(100, () => {
+                    if (enemy.active) enemy.setTint(GameOptions.fifthEnemy.color);
+                });
+                
+                if (enemy.health <= 0) {
+                    // Recompensa maior por derrotar o boss
+                    this.spawnCoinCluster(enemy.x, enemy.y, 20);
+                    enemy.destroy();
+                    bullet.destroy();
+                    
+                    // Evento especial ao derrotar o boss
+                    this.time.delayedCall(1000, () => {
+                        this.showBossDefeatedMessage();
+                    });
+                }
             } else {
                 // Inimigo normal
                 enemy.body.checkCollision.none = true;
@@ -658,6 +737,32 @@ class PlayGame extends Phaser.Scene {
         });
         this.physics.add.overlap(this.player, this.npcGroup, (player, npc) => {
             if (!npc.collected) { npc.collected = true; npc.destroy(); this.npcArrow?.setVisible(false); this.upgradeTime(); }
+        });
+    }
+    showBossDefeatedMessage() {
+        const message = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY - 100,
+            'BOSS DERROTADO!',
+            { 
+                fontSize: '48px', 
+                fill: '#FFD700', 
+                fontFamily: 'Arial',
+                stroke: '#000000',
+                strokeThickness: 5
+            }
+        )
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(10000);
+        
+        this.tweens.add({
+            targets: message,
+            y: message.y - 50,
+            alpha: 0,
+            duration: 3000,
+            ease: 'Power2',
+            onComplete: () => message.destroy()
         });
     }
     spawnCoinCluster(x, y, count) {
