@@ -27,10 +27,6 @@ class PlayGame extends Phaser.Scene {
     playerXP = 0;
     nextLevelXP = 100;
 
-    // --- Coins ---
-    coinXPBonus = 0;
-    doubleCoinChance = 0; // 0 = 0%
-
     // --- UI Elements ---
     hpText = null;
     healthBarBg;
@@ -44,13 +40,7 @@ class PlayGame extends Phaser.Scene {
     xpText;
     levelText;
     levelUpUI = [];
-
-    // --- Timer & Pause ---
-    totalGameTime = 900000;
-    totalMinutes = 15;
-    elapsedTime = 0;
-    isPaused = false;
-
+    
     // --- Player Movement ---
     lastDirection = 'down';
 
@@ -117,6 +107,17 @@ class PlayGame extends Phaser.Scene {
         this.selectedCharacter = this.selectedSpriteKey;
         this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter)
             .setDisplaySize(80, 80).setSize(80, 80);
+
+        
+        // --- Coins ---
+        this.coinXPBonus = 0;
+        this.doubleCoinChance = 0; // 0 = 0%
+
+        // --- Timer & Pause ---
+        this.totalGameTime = 900000;
+        this.totalMinutes = 15;
+        this.elapsedTime = 0;
+        this.isPaused = false;
 
         // Groups
         this.mapGeneration();
