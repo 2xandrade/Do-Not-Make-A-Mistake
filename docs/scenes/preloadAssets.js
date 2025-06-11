@@ -51,6 +51,8 @@ class PreloadAssets extends Phaser.Scene {
         this.load.image('upgrade_coin','assets/sprites/cookieDuplo.png');
         this.load.image('coin', 'assets/sprites/coin.png');
         this.load.image('tileset', 'assets/sprites/mapa/mapaSprites.png');
+
+        this.load.audio('jogoSong', 'assets/sprites/musica/jogoSong.ogg');
     }
 
     // method to be executed when the scene is created
