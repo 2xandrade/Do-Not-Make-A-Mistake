@@ -17,6 +17,8 @@ class PlayGame extends Phaser.Scene {
     selectedCharacterIndex = 0;
 
     // --- Player State ---
+    initialSpawnX = 50000;
+    initialSpawnY = 50000;
     playerHP = 5;
     isInvulnerable = false;
     playerBulletCount = 1;
@@ -105,10 +107,19 @@ class PlayGame extends Phaser.Scene {
         // Camera & Player
         this.cameras.main.setScroll(0, 0);
         this.selectedCharacter = this.selectedSpriteKey;
-        this.player = this.physics.add.sprite(GameOptions.gameSize.width / 2, GameOptions.gameSize.height / 2, this.selectedCharacter)
+        this.player = this.physics.add.sprite(this.initialSpawnX, this.initialSpawnY, this.selectedCharacter)
             .setDisplaySize(80, 80).setSize(80, 80);
 
-        
+        this.initialSpawnX = this.player.x;
+        this.initialSpawnY = this.player.y;
+
+        // === MÚSICA ===
+        this.music = this.sound.add('jogoSong', {
+            volume: 1,   
+            loop: true   
+        });
+        this.music.play();
+
         // --- Coins ---
         this.coinXPBonus = 0;
         this.doubleCoinChance = 0; // 0 = 0%
@@ -215,14 +226,6 @@ class PlayGame extends Phaser.Scene {
             frameRate: 2,
             repeat: -1
         });
-
-    // === MÚSICA ===
-        const sound = this.sound.add('jogoSong', {
-            volume: 0.5,    
-            loop: true      
-        });
-        
-        sound.play();
     }
 
     // === UPDATE LOOP ===
@@ -249,13 +252,18 @@ class PlayGame extends Phaser.Scene {
         }
 
         // NPC Arrow
-        if (this.npcArrow && this.npcArrow.target && this.npcArrow.target.active) {
-            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.npcArrow.target.x, this.npcArrow.target.y);
-            this.npcArrow.setRotation(angle);
-            this.npcArrow.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
-        } else {
-            this.npcArrow?.setVisible(false);
+        if (this.npcArrow) {
+            this.npcArrow.x = this.player.x;
+            this.npcArrow.y = this.player.y + 100;
+            if (this.npcArrow.visible && this.npcArrow.target) {
+                const dx = this.npcArrow.target.x - this.npcArrow.x;
+                const dy = this.npcArrow.target.y - this.npcArrow.y;
+
+                this.npcArrow.rotation = Phaser.Math.Angle.Between(0, 0, dx, dy);
+            }
         }
+
+        // Inimigos
 
         if (!this.secondEnemySpawned && this.elapsedTime >= GameOptions.secondEnemy.spawnTime) {
             this.spawnSecondEnemy();
@@ -745,7 +753,7 @@ class PlayGame extends Phaser.Scene {
             this.coinGroup.killAndHide(coin); coin.body.checkCollision.none = true;
         });
         this.physics.add.overlap(this.player, this.npcGroup, (player, npc) => {
-            if (!npc.collected) { npc.collected = true; npc.destroy(); this.npcArrow?.setVisible(false); this.upgradeTime(); }
+            if (!npc.collected) { npc.collected = true; npc.destroy(); this.npcArrow?.setVisible(false); this.npcArrow.target = null; this.upgradeTime(); }
         });
     }
     showBossDefeatedMessage() {
@@ -928,9 +936,10 @@ class PlayGame extends Phaser.Scene {
         const npc = this.physics.add.sprite(x, y, 'npcSprites').setDisplaySize(150, 150);
         npc.checkpointMinute = minuteCheckpoint; this.npcGroup.add(npc);
         if (!this.npcArrow) {
-            this.npcArrow = this.add.sprite(0, 20, 'armas', 1).setScrollFactor(0).setDepth(2000);
+            this.npcArrow = this.add.sprite(0, 20, 'armas', 1).setScrollFactor(0).setDepth(5000);
             this.npcArrow.setDisplaySize(100, 100);
-        }
+        } 
+        this.npcArrow.setVisible(true);
         this.npcArrow.target = npc;
     }
 
@@ -952,7 +961,9 @@ class PlayGame extends Phaser.Scene {
                 targets: [this.gameOverText, this.restartText], alpha: 1, ease: 'Linear'
             });
         }
-        this.input.keyboard?.once('keydown-R', () => { this.scene.restart(); });
+        this.music.stop(); 
+        this.input.keyboard?.once('keydown-R', () => { 
+        this.scene.restart({ spawnX: this.initialSpawnX, spawnY: this.initialSpawnY }); });
         this.timeBar.clear().fillStyle(0xff0000, 1).fillRect(0, 0, this.cameras.main.width * 0.9, 20);
     }
 }

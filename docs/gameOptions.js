@@ -46,9 +46,9 @@ var GameOptions = {
         spawnTime: 720000,      // 12 min in ms  720000
         maxActive: 1,
         texture: 'boss',
-        health: 100,
+        health: 250,
         damage: 5,
-        speed: 30,
-        size: 150,
+        speed: 70,
+        size: 250,
     }
 };
