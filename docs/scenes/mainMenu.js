@@ -69,6 +69,8 @@ class MainMenu extends Phaser.Scene {
     MainMenu.CHARACTERS.forEach(c => {
       this.load.spritesheet(c.key, `assets/sprites/personagens/${c.key}.png`, config);
     });
+
+    this.load.audio('doNotSong', 'assets/sprites/musica/doNotSong.ogg');
   }
 
   create() {
@@ -94,6 +96,13 @@ class MainMenu extends Phaser.Scene {
       .on('pointerdown', () => this.startGame());
 
     this.createCharacterSelection(centerX, centerY);
+
+    this.music = this.sound.add('doNotSong', {
+            volume: 1,   
+            loop: true   
+        });
+        
+    this.music.play();
   }
 
   createTileBackground() {
@@ -267,6 +276,7 @@ class MainMenu extends Phaser.Scene {
   }
 
   startGame() {
+    this.music.stop(); 
     this.scene.start("PreloadAssets", { characterIndex: this.selectedCharacter });
   }
 
