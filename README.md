@@ -16,19 +16,46 @@ Cada escolha influencia o julgamento final de sua existência, e apenas os mais 
 
 ---
 
+### Site para jogar
+
+Você pode acessar o jogo através do site: https://2xandrade.github.io/Do-Not-Make-A-Mistake/
+
+---
+
+### Controles Básicos
+
+* **Seleção de Personagem**: Antes de iniciar o jogo, o jogador poderá escolher entre os quatro personagens disponíveis: Ladina, Arqueira, Paladino e Bardo.
+* **Movimentação**: Durante a partida, utilize as teclas:
+  * **W** – Cima
+  * **A** – Esquerda
+  * **S** – Baixo
+  * **D** – Direita
+
+* **Combate e Coleta** : Elimine os inimigos e colete os cookies deixados por eles.
+* **Cookies** : Item derrubado pelos inimigos que aumenta sua experiência (XP), permitindo atingir novos níveis e desbloquear power-ups.
+* **Power-ups** : Ao subir de nível, você poderá escolher entre três melhorias que facilitarão o combate. Tipos disponíveis:
+  * **+1 HP**
+  * **+5 XP**
+  * **+1 Tiro**
+  * **Área de coleta aumentada**
+  * **Tiro veloz**
+  * **Mais velocidade**
+
+* **Eventos**: NPCs especiais aparecerão durante a partida. Ao interagir com eles, você poderá receber power-ups extras que ajudarão na preparação para o confronto com o chefe final.
+
+---
+
 ### Regras Básicas
 
 * **Escolha de Herói:** Quatro personagens jogáveis (Paladino, Bardo, Ladina, Arqueira), cada um com questões pendentes e motivações únicas.
 * **Combate Roguelike:** Hordas de inimigos que ficam progressivamente mais fortes.
-* **Eventos Dinâmicos:** Encontros com eventos únicos e chefes a cada 3 minutos, culminando em um chefe final aos 15 minutos.
-* **Progressão de Personagem:** Ganho de EXP e escolha de novas armas/melhorias de habilidades.
-* **Melhorias Permanentes:** Desbloqueio de melhorias aplicáveis em todas as partidas futuras.
-* **Julgamento Moral:** Escolhas que influenciam o destino da alma do herói (redenção ou corrupção).
+* **Eventos Dinâmicos:** Encontros com eventos únicos e chefes a cada 3 minutos, culminando em um chefe final aos 12 minutos.
+* **Progressão de Personagem:** Ganho de EXP e escolha de novas melhorias de habilidades.
 
 ---
 
 ### Stack Tecnológica
 Tecnologias, frameworks e bibliotecas utilizadas no desenvolvimento do projeto:
 *   **Phaser e Javascript:** Responsável pela implementação das mecânicas e funcionalidades principais do jogo.
-*   **Bibliotecas:**
+*   **Bibliotecas:** Phaser
 *   **HTML e CSS:** Estruturação e estilização da interface

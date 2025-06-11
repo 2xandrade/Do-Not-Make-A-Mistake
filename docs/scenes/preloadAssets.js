@@ -10,6 +10,12 @@ class PreloadAssets extends Phaser.Scene {
         });
     }
 
+    init(data) {
+        if (data && data.characterIndex !== undefined) {
+            this.characterIndexToLoad = data.characterIndex;
+        }
+    }
+
     // method to be called during class preloading
     preload() {
 
@@ -17,15 +23,16 @@ class PreloadAssets extends Phaser.Scene {
 
         const spritesheets = [
             // Inimigos
+            { key: 'boss', path: 'assets/sprites/inimigos/bossSprites.png' },
             { key: 'gatoCapuz', path: 'assets/sprites/inimigos/gatoCapuzSprites.png' },
             { key: 'gatoPernas', path: 'assets/sprites/inimigos/gatoPernasSprites.png' },
             { key: 'gatoPreto', path: 'assets/sprites/inimigos/gatoPretoSprites.png' },
             { key: 'gatoSlime', path: 'assets/sprites/inimigos/gatoSlimeSprites.png' },
             // Personagens
             { key: 'paladinoSprites', path: 'assets/sprites/personagens/paladinoSprites.png' },
-            { key: 'ladinaSprites', path: 'assets/sprites/personagens/ladinaSprites.png' },
-            { key: 'arqueiraSprites', path: 'assets/sprites/personagens/arqueiraSprites.png' },
             { key: 'bardoSprites', path: 'assets/sprites/personagens/bardoSprites.png' },
+            { key: 'arqueiraSprites', path: 'assets/sprites/personagens/arqueiraSprites.png' },
+            { key: 'ladinaSprites', path: 'assets/sprites/personagens/ladinaSprites.png' },
             { key: 'npcSprites', path: 'assets/sprites/npc/npcSprites.png' },
             // Miscellaneous
             { key: 'armas', path: 'assets/sprites/armas/armasSprite.png' }
@@ -34,7 +41,14 @@ class PreloadAssets extends Phaser.Scene {
         spritesheets.forEach(sheet => {
             this.load.spritesheet(sheet.key, sheet.path, commonSpriteSheetConfig);
         });
-
+        this.load.image('upgrade_speed','assets/sprites/velocidade.png');
+        this.load.image('upgrade_hp','assets/sprites/mais1Hp.png');
+        this.load.image('upgrade_tiros','assets/sprites/tiroVeloz.png');
+        this.load.image('upgrade_raio','assets/sprites/maisAreaColeta.png');
+        this.load.image('upgrade_atirar','assets/sprites/atirarMaisVezes.png');
+        this.load.image('upgrade_multi','assets/sprites/mais1Tirooo.png');
+        this.load.image('upgrade_exp','assets/sprites/mais5Xp.png');
+        this.load.image('upgrade_coin','assets/sprites/cookieDuplo.png');
         this.load.image('coin', 'assets/sprites/coin.png');
         this.load.image('tileset', 'assets/sprites/mapa/mapaSprites.png');
     }
@@ -43,6 +57,6 @@ class PreloadAssets extends Phaser.Scene {
     create() {
 
         // start PlayGame scene
-        this.scene.start('PlayGame');
+        this.scene.start('PlayGame', { characterIndex: this.characterIndexToLoad });
     }
 }
