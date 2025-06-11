@@ -215,6 +215,14 @@ class PlayGame extends Phaser.Scene {
             frameRate: 2,
             repeat: -1
         });
+
+    // === MÚSICA ===
+        const sound = this.sound.add('jogoSong', {
+            volume: 0.5,    
+            loop: true      
+        });
+        
+        sound.play();
     }
 
     // === UPDATE LOOP ===
