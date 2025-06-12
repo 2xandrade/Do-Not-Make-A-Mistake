@@ -121,7 +121,7 @@ class PlayGame extends Phaser.Scene {
 
         // === MÚSICA ===
         this.music = this.sound.add('jogoSong2', {
-            volume: 1,   
+            volume: 0.5,   
             loop: true   
         });
         this.music.play();
