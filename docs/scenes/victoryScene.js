@@ -1,6 +1,19 @@
 class VictoryScene extends Phaser.Scene {
+
+    tileCache = new Set();
+    tileWeightPool = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    11, 11, 11, 11, 11, 11, 11,
+    1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10
+    ];
+
     constructor() {
         super({ key: "victoryScene" });
+    }
+
+    preload() {
+        this.load.image("tileset", "assets/sprites/mapa/mapaSprites.png");
     }
 
     init(data) {
@@ -53,17 +66,39 @@ class VictoryScene extends Phaser.Scene {
 
     // Reutiliza o método de fundo do MainMenu
     createTileBackground() {
-        const tileSize = 256;
-        const cols = Math.ceil(this.cameras.main.width / tileSize) + 1;
-        const rows = Math.ceil(this.cameras.main.height / tileSize) + 1;
+    this.tileMap = this.make.tilemap({
+      tileWidth: this.tileSize,
+      tileHeight: this.tileSize,
+      width: 1000,  // Large enough to fill the menu
+      height: 1000
+    });
 
-        for (let x = 0; x < cols; x++) {
-            for (let y = 0; y < rows; y++) {
-                this.add.image(x * tileSize, y * tileSize, 'tileset', 0)
-                    .setOrigin(0)
-                    .setDisplaySize(tileSize, tileSize)
-                    .setAlpha(0.4);
-            }
+    this.tileset = this.tileMap.addTilesetImage('tileset', null, this.tileSize, this.tileSize);
+    this.tileLayer = this.tileMap.createBlankLayer('Ground', this.tileset);
+
+    this.populateTilemap();
+  }
+
+  populateTilemap(radius = 10) {
+    // Fill the screen area with random tiles like in PlayGame
+    const centerX = Math.floor(this.cameras.main.centerX / this.tileSize);
+    const centerY = Math.floor(this.cameras.main.centerY / this.tileSize);
+
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        const tileX = centerX + dx;
+        const tileY = centerY + dy;
+        const key = `${tileX},${tileY}`;
+
+        if (!this.tileCache.has(key)) {
+          const tileIndex = Phaser.Utils.Array.GetRandom(this.tileWeightPool);
+          this.tileLayer.putTileAt(tileIndex, tileX, tileY);
+          this.tileCache.add(key);
         }
+      }
     }
+
+    // Send the tile layer to the back
+    this.tileLayer.setDepth(-10);
+  }
 }
