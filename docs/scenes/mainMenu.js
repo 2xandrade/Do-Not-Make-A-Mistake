@@ -1,4 +1,17 @@
 class MainMenu extends Phaser.Scene {
+
+tileSize = 256;
+tileMap;
+tileLayer;
+tileset;
+tileCache = new Set();
+tileWeightPool = [
+  0, 0, 0, 0, 0, 0, 0, 0, 0,
+  11, 11, 11, 11, 11, 11, 11,
+  1, 2, 3, 4, 5, 6, 7,
+  8, 9, 10
+];
+
   static CHARACTERS = [
     {
       key: "paladinoSprites",
@@ -69,6 +82,8 @@ class MainMenu extends Phaser.Scene {
     MainMenu.CHARACTERS.forEach(c => {
       this.load.spritesheet(c.key, `assets/sprites/personagens/${c.key}.png`, config);
     });
+
+    this.load.audio('doNotSong', 'assets/sprites/musica/doNotSong.ogg');
   }
 
   create() {
@@ -94,23 +109,50 @@ class MainMenu extends Phaser.Scene {
       .on('pointerdown', () => this.startGame());
 
     this.createCharacterSelection(centerX, centerY);
+
+    this.music = this.sound.add('doNotSong', {
+            volume: 1,   
+            loop: true   
+        });
+        
+    this.music.play();
   }
 
   createTileBackground() {
-    const tileSize = 256;
-    const cols = Math.ceil(this.cameras.main.width / tileSize) + 1;
-    const rows = Math.ceil(this.cameras.main.height / tileSize) + 1;
+    this.tileMap = this.make.tilemap({
+      tileWidth: this.tileSize,
+      tileHeight: this.tileSize,
+      width: 1000,  // Large enough to fill the menu
+      height: 1000
+    });
 
-    for (let x = 0; x < cols; x++) {
-      for (let y = 0; y < rows; y++) {
-        const posX = x * tileSize;
-        const posY = y * tileSize;
-        this.add.image(posX, posY, 'tileset', 0)
-          .setOrigin(0)
-          .setDisplaySize(tileSize, tileSize)
-          .setAlpha(0.6);
+    this.tileset = this.tileMap.addTilesetImage('tileset', null, this.tileSize, this.tileSize);
+    this.tileLayer = this.tileMap.createBlankLayer('Ground', this.tileset);
+
+    this.populateTilemap();
+  }
+
+  populateTilemap(radius = 10) {
+    // Fill the screen area with random tiles like in PlayGame
+    const centerX = Math.floor(this.cameras.main.centerX / this.tileSize);
+    const centerY = Math.floor(this.cameras.main.centerY / this.tileSize);
+
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        const tileX = centerX + dx;
+        const tileY = centerY + dy;
+        const key = `${tileX},${tileY}`;
+
+        if (!this.tileCache.has(key)) {
+          const tileIndex = Phaser.Utils.Array.GetRandom(this.tileWeightPool);
+          this.tileLayer.putTileAt(tileIndex, tileX, tileY);
+          this.tileCache.add(key);
+        }
       }
     }
+
+    // Send the tile layer to the back
+    this.tileLayer.setDepth(-10);
   }
 
   toggleCharacterSelection() {
@@ -267,6 +309,7 @@ class MainMenu extends Phaser.Scene {
   }
 
   startGame() {
+    this.music.stop(); 
     this.scene.start("PreloadAssets", { characterIndex: this.selectedCharacter });
   }
 
