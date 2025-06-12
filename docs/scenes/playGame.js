@@ -1110,9 +1110,10 @@ class PlayGame extends Phaser.Scene {
             spawnX: this.initialSpawnX,
             spawnY: this.initialSpawnY
         });
-        this.music.stop(); 
-        this.input.keyboard?.once('keydown-R', () => { 
-        this.scene.restart({ characterIndex: this.selectedCharacterIndex, spawnX: this.player.x, spawnY: this.player.y }); });
+        this.music.stop();
+        this.input.keyboard?.once('keydown-R', () => {
+            window.location.reload();
+        });
         this.timeBar.clear().fillStyle(0xff0000, 1).fillRect(0, 0, this.cameras.main.width * 0.9, 20);
     }
 }
