@@ -41,6 +41,10 @@ class PreloadAssets extends Phaser.Scene {
         spritesheets.forEach(sheet => {
             this.load.spritesheet(sheet.key, sheet.path, commonSpriteSheetConfig);
         });
+        this.load.image('bardoTwink','assets/sprites/personagens/bardoTwink.png');
+        this.load.image('ladinaPassiva','assets/sprites/personagens/ladinaPassiva.png');
+        this.load.image('arqueiraMulher','assets/sprites/personagens/arqueiraMulher.png');
+        this.load.image('paladinoTwink','assets/sprites/personagens/paladinoTwink.png');
         this.load.image('upgrade_speed','assets/sprites/velocidade.png');
         this.load.image('upgrade_hp','assets/sprites/mais1Hp.png');
         this.load.image('upgrade_tiros','assets/sprites/tiroVeloz.png');

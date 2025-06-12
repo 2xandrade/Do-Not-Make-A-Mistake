@@ -51,16 +51,12 @@ class PlayGame extends Phaser.Scene {
     tileMap;
     tileLayer;
     tileset;
-    tileCache = new Set();
-    lastTileX = null;
-    lastTileY = null;
     referenceX = 0;
     referenceY = 0;
 
     secondEnemySpawned = false;
     thirdEnemySpawned = false;
     fourthEnemySpawned = false;
-
     bossSpawned = false; 
 
     // --- Upgrades ---
@@ -69,8 +65,7 @@ class PlayGame extends Phaser.Scene {
         { label: '+1 HP', type: 'hp', spriteKey: 'upgrade_hp', effect: () => this.playerHP = Math.min(this.playerHP + 1, 5) },
         { label: 'Tiros Velozes', type: 'bulletSpeed', spriteKey: 'upgrade_tiros', effect: () => GameOptions.bulletSpeed += 30 },
         { label: 'Maior raio de Coleta', type: 'magnet',spriteKey: 'upgrade_raio', effect: () => GameOptions.magnetRadius += 10 },
-        { label: 'Atirar mais vezes', type: 'rate',spriteKey: 'upgrade_atirar', effect: () => this.bulletRate = Math.max(this.bulletRate - 50, 100) },
-        { label: '+1 tiro simultâneo', type: 'multi',spriteKey: 'upgrade_multi', effect: () => this.playerBulletCount += 1 },
+        { label: 'Atirar mais vezes', type: 'rate', spriteKey: 'upgrade_atirar', effect: () => {this.bulletRate = Math.max(this.bulletRate - 50, 100); if (this.orb && this.orb.orbitSpeed) {this.orb.orbitSpeed += 0.01;}}},        { label: '+1 tiro simultâneo', type: 'multi',spriteKey: 'upgrade_multi', effect: () => this.playerBulletCount += 1 },
         { label: '+5 XP por cookie', type: 'xpcoin',spriteKey: 'upgrade_exp', effect: () => this.coinXPBonus += 5 },
         { label: 'Chance de cookies duplas', type: 'doublecoin',spriteKey: 'upgrade_coin', effect: () => this.doubleCoinChance = Math.min(this.doubleCoinChance + 0.05, 1) }
     ];
@@ -101,17 +96,28 @@ class PlayGame extends Phaser.Scene {
             this.selectedCharacterIndex = 0;
             this.selectedSpriteKey = "paladinoSprites";
         }
+
+        // Add this for spawn position:
+        if (data && data.spawnX !== undefined && data.spawnY !== undefined) {
+            this.spawnX = data.spawnX;
+            this.spawnY = data.spawnY;
+        } else {
+            // fallback default spawn positions
+            this.spawnX = this.initialSpawnX; // or whatever default you want
+            this.spawnY = this.initialSpawnY;
+        }
     }
 
     create() {
         // Camera & Player
         this.cameras.main.setScroll(0, 0);
         this.selectedCharacter = this.selectedSpriteKey;
-        this.player = this.physics.add.sprite(this.initialSpawnX, this.initialSpawnY, this.selectedCharacter)
-            .setDisplaySize(80, 80).setSize(80, 80);
-
+        this.player = this.physics.add.sprite(this.spawnX, this.spawnY, this.selectedCharacter)
+            .setDisplaySize(80, 80)
+            .setSize(80, 80);
         this.initialSpawnX = this.player.x;
         this.initialSpawnY = this.player.y;
+        this.boomerangGroup = this.physics.add.group();
 
         // === MÚSICA ===
         this.music = this.sound.add('jogoSong', {
@@ -130,8 +136,9 @@ class PlayGame extends Phaser.Scene {
         this.elapsedTime = 0;
         this.isPaused = false;
 
-        // Groups
         this.mapGeneration();
+        
+        // Groups
         this.enemyGroup = this.physics.add.group();
         this.bulletGroup = this.physics.add.group();
         this.coinGroup = this.physics.add.group();
@@ -263,11 +270,23 @@ class PlayGame extends Phaser.Scene {
             }
         }
 
+        //Armas
+        this.boomerangGroup.getChildren().forEach(boomerang => {
+            if (boomerang.isReturning) {
+                this.physics.moveToObject(boomerang, this.player, GameOptions.bulletSpeed);
+                
+                const dist = Phaser.Math.Distance.Between(boomerang.x, boomerang.y, this.player.x, this.player.y);
+                if (dist < 10) {
+                    boomerang.destroy();
+                }
+            }
+        });
+
         // Inimigos
 
         if (!this.secondEnemySpawned && this.elapsedTime >= GameOptions.secondEnemy.spawnTime) {
             this.spawnSecondEnemy();
-            this.secondEnemySpawned = true; // Marca como spawnado
+            this.secondEnemySpawned = true; 
         }
 
         if (!this.thirdEnemySpawned && this.elapsedTime >= GameOptions.thirdEnemy.spawnTime) {
@@ -297,7 +316,11 @@ class PlayGame extends Phaser.Scene {
         this.tileSize = 256;
         this.tileMap = this.make.tilemap({ tileWidth: this.tileSize, tileHeight: this.tileSize, width: 1000, height: 1000 });
         this.tileset = this.tileMap.addTilesetImage('tileset', null, this.tileSize, this.tileSize);
-        this.tileLayer = this.tileMap.createBlankLayer('Ground', this.tileset).setDepth(-10);
+        this.tileLayer = this.tileMap.createBlankLayer('Ground', this.tileset)
+            .setDepth(-10);
+        this.tileCache = new Set();
+        this.lastTileX = null;
+        this.lastTileY = null;
         this.tileWeightPool = [
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             11, 11, 11, 11, 11, 11, 11,
@@ -636,17 +659,158 @@ class PlayGame extends Phaser.Scene {
         this.time.addEvent({
             delay: this.bulletRate, loop: true, callback: () => {
                 const closestEnemy = this.physics.closest(this.player, this.enemyGroup.getChildren());
-                if (closestEnemy !== null) {
-                    const dx = closestEnemy.x - this.player.x, dy = closestEnemy.y - this.player.y;
-                    let bulletFrame = 1;
-                    if (Math.abs(dx) > Math.abs(dy)) bulletFrame = dx > 0 ? 1 : 3;
-                    else bulletFrame = dy > 0 ? 4 : 2;
-                    for (let i = 0; i < this.playerBulletCount; i++) {
-                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'armas', bulletFrame)
-                            .setDisplaySize(100, 100).setSize(100, 100);
-                        this.bulletGroup.add(bullet);
-                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
-                        this.time.delayedCall(4000, () => { if (bullet && bullet.active) bullet.destroy(); }, [], this);
+                if (closestEnemy !== null || this.selectedCharacterIndex === 1 || this.selectedCharacterIndex === 0) {
+                    switch (this.selectedCharacterIndex) {
+                        // Paladino - Floating Orb
+                        case 0:
+                            if (!this.orb || !this.orb.active) {
+                                this.orb = this.physics.add.sprite(this.player.x + 100, this.player.y, 'armas', 5)
+                                    .setDisplaySize(150, 150)
+                                    .setSize(80, 80)
+                                    .setCircle(40);
+
+                                this.bulletGroup.add(this.orb);
+
+                                // Initialize orb speed and angle
+                                this.orb.orbitAngle = 0;
+                                this.orb.orbitSpeed = 0.025; // Set your starting speed
+
+                                this.physics.add.overlap(this.orb, this.enemyGroup, (orb, enemy) => {
+                                    if (!enemy.lastHitTime || this.time.now - enemy.lastHitTime > 300) {
+                                        enemy.lastHitTime = this.time.now;
+
+                                        if (enemy.health === undefined || enemy.health === null) {
+                                            enemy.health = 1;
+                                        }
+
+                                        this.colissions(enemy);
+
+                                        enemy.setTint(0xff0000);
+                                        this.time.delayedCall(100, () => {
+                                            if (enemy.active) enemy.clearTint();
+                                        });
+                                    }
+                                });
+                            }
+                            if (!this.orbEvent) {
+                                this.orbEvent = this.time.addEvent({
+                                    delay: 16,
+                                    loop: true,
+                                    callback: () => {
+                                        if (this.orb?.active && this.player?.active) {
+                                            this.orb.orbitAngle = (this.orb.orbitAngle + this.orb.orbitSpeed) % (2 * Math.PI);
+                                            this.orb.x = this.player.x + 100 * Math.cos(this.orb.orbitAngle);
+                                            this.orb.y = this.player.y + 100 * Math.sin(this.orb.orbitAngle);
+                                        }
+                                    }
+                                });
+                            }
+                        break;
+                        // Bardo - Boomerang
+                        case 1:
+                            if (closestEnemy) {
+                                for (let i = 0; i < this.playerBulletCount; i++) {
+                                    this.time.delayedCall(i * 300, () => { 
+                                        const boomerang = this.physics.add.sprite(this.player.x, this.player.y, 'armas', 12)
+                                            .setDisplaySize(80, 80)
+                                            .setSize(80, 80);
+                                        this.boomerangGroup.add(boomerang);
+
+                                        boomerang.isReturning = false;
+
+                                        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, closestEnemy.x, closestEnemy.y);
+                                        this.physics.velocityFromRotation(angle, GameOptions.bulletSpeed, boomerang.body.velocity);
+
+                                        // Add an update event to track boomerang returning
+                                        boomerang.updateReturn = () => {
+                                            if (boomerang.isReturning) {
+                                                // Continuously move the boomerang toward the player's current position
+                                                this.physics.moveToObject(boomerang, this.player, GameOptions.bulletSpeed);
+                                            }
+                                        };
+
+                                        this.events.on('update', () => {
+                                            if (boomerang.active) {
+                                                boomerang.updateReturn();
+                                            }
+                                        });
+
+                                        // Enemy collision stays the same
+                                        this.physics.add.overlap(boomerang, this.enemyGroup, (boomerang, enemy) => {
+                                            if (!boomerang.isReturning) {
+                                                boomerang.isReturning = true;
+                                                boomerang.setFrame(13);
+                                                this.physics.moveToObject(boomerang, this.player, GameOptions.bulletSpeed);
+
+                                                this.colissions(enemy); // 
+                                            } else {
+                                                this.colissions(enemy); // 
+                                                boomerang.destroy();
+                                            }
+                                        });
+                                        // Player collision same as before
+                                        this.physics.add.overlap(this.player, boomerang, () => {
+                                            if (boomerang.active && boomerang.isReturning) {
+                                                boomerang.destroy();
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                            break;
+                        // Arqueira - Default Weapon
+                        case 2: // Arqueira
+                            if (closestEnemy) {
+                                for (let i = 0; i < this.playerBulletCount; i++) {
+                                    this.time.delayedCall(i * 300, () => {
+                                        const dx = closestEnemy.x - this.player.x;
+                                        const dy = closestEnemy.y - this.player.y;
+
+                                        let arrowFrame = 1;
+                                        if (Math.abs(dx) > Math.abs(dy)) {
+                                            arrowFrame = dx > 0 ? 1 : 3;
+                                        } else {
+                                            arrowFrame = dy > 0 ? 4 : 2; 
+                                        }
+                                        const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'armas', arrowFrame)
+                                            .setDisplaySize(100, 100)
+                                            .setSize(100, 100);
+
+                                        this.bulletGroup.add(bullet);
+                                        this.physics.moveToObject(bullet, closestEnemy, GameOptions.bulletSpeed);
+
+                                        this.time.delayedCall(4000, () => {
+                                            if (bullet && bullet.active) bullet.destroy();
+                                        });
+                                    });
+                                }
+                            }
+                            break;
+                        // Ladina - Shoots in facing direction
+                        case 3:
+                            let dx = 0, dy = 0;
+                            let daggerFrame = 0;
+                            switch (this.lastDirection) {
+                                case 'up': dy = -1; daggerFrame = 8; break;
+                                case 'down': dy = 1; daggerFrame = 10; break;
+                                case 'left': dx = -1; daggerFrame = 9; break;
+                                case 'right': dx = 1; daggerFrame = 7; break;
+                            }
+
+                            for (let i = 0; i < this.playerBulletCount; i++) {
+                                this.time.delayedCall(i * 300, () => {
+                                    const dagger = this.physics.add.sprite(this.player.x, this.player.y, 'armas', daggerFrame)
+                                        .setDisplaySize(120, 120)
+                                        .setSize(120, 120);
+                                    this.bulletGroup.add(dagger);
+                                    dagger.setVelocity(dx * GameOptions.bulletSpeed, dy * GameOptions.bulletSpeed);
+
+                                    this.time.delayedCall(3000, () => {
+                                        if (dagger && dagger.active) dagger.destroy();
+                                    });
+                                });
+                            }
+                        break;
                     }
                 }
             }
@@ -655,98 +819,61 @@ class PlayGame extends Phaser.Scene {
     setupCollisions() {
         this.physics.add.collider(this.player, this.enemyGroup, () => { this.takeDamage(); });
         this.physics.add.collider(this.bulletGroup, this.enemyGroup, (bullet, enemy) => {
-            bullet.destroy();
-            const enemyType = enemy.texture?.key;
-
-            // Define as propriedades baseado no tipo de inimigo
-            if (enemyType === 'gatoPernas') {
-                // Inimigo especial (segundo, terceiro ou quarto)
+            if (this.selectedCharacterIndex === 0 && bullet === this.orb) {
                 enemy.health--;
                 enemy.setTint(0xff0000);
 
-                let enemyColor;
-                    if (enemyType === 'gatoPernas') { // Aqui você precisaria diferenciar melhor os inimigos
-                        enemyColor = GameOptions.secondEnemy.color;
-                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
-                    }
-                
-                this.time.delayedCall(100, () => { 
-                    if (enemy.active) enemy.setTint(enemyColor); 
-                });
-                
-                if (enemy.health <= 0) {
-                    this.spawnCoinCluster(enemy.x, enemy.y, 5);
-                    enemy.destroy();
-                    bullet.destroy();
-                }
-            } else if (enemyType === 'gatoPreto') {
-                // Inimigo especial (segundo, terceiro ou quarto)
-                enemy.health--;
-                enemy.setTint(0xff0000);
-
-                let enemyColor;
-                    if (enemyType === 'gatoPreto') { // Aqui você precisaria diferenciar melhor os inimigos
-                        enemyColor = GameOptions.thirdEnemy.color;
-                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
-                    }
-                
-                this.time.delayedCall(100, () => { 
-                    if (enemy.active) enemy.setTint(enemyColor); 
-                });
-                
-                if (enemy.health <= 0) {
-                    this.spawnCoinCluster(enemy.x, enemy.y, 6);
-                    enemy.destroy();
-                    bullet.destroy();
-                }
-            } else if (enemyType === 'gatoCapuz') {
-                // Inimigo especial (segundo, terceiro ou quarto)
-                enemy.health--;
-                enemy.setTint(0xff0000);
-
-                let enemyColor;
-                    if (enemyType === 'gatoCapuz') { // Aqui você precisaria diferenciar melhor os inimigos
-                        enemyColor = GameOptions.fourthEnemy.color;
-                        // Ou thirdEnemy/fourthEnemy dependendo de como diferenciá-los
-                    }
-                
-                this.time.delayedCall(100, () => { 
-                    if (enemy.active) enemy.setTint(enemyColor); 
-                });
-                
-                if (enemy.health <= 0) {
-                    this.spawnCoinCluster(enemy.x, enemy.y, 8);
-                    enemy.destroy();
-                    bullet.destroy();
-                }
-            } else if (enemyType === 'boss') {  // <--- ADICIONE AQUI
-                enemy.health--;
-                enemy.setTint(0xff0000);
-
-                // Efeito de hit
                 this.time.delayedCall(100, () => {
-                    if (enemy.active) enemy.setTint(GameOptions.fifthEnemy.color);
+                    if (enemy.active) enemy.clearTint();
                 });
-                
+
                 if (enemy.health <= 0) {
-                    // Recompensa maior por derrotar o boss
-                    this.spawnCoinCluster(enemy.x, enemy.y, 20);
+                    this.spawnCoinCluster(enemy.x, enemy.y, 3);
                     enemy.destroy();
-                    bullet.destroy();
-                    
-                    // Evento especial ao derrotar o boss
-                    this.time.delayedCall(1000, () => {
-                        this.showBossDefeatedMessage();
-                    });
                 }
-            } else {
-                // Inimigo normal
-                enemy.body.checkCollision.none = true;
-                this.spawnCoinCluster(enemy.x, enemy.y, 1);
-                enemy.destroy();
-                bullet.destroy();
+
+                return;
             }
+
+            if (this.selectedCharacterIndex === 1 && (bullet.frame.name === 12 || bullet.frame.name === 13)) {
+                this.colissions(enemy);
+                return;
+            }
+
+            if (this.selectedCharacterIndex === 3) {
+                this.colissions(enemy);
+                this.colissions(enemy);
+                bullet.destroy();
+                return; 
+            }
+
+            bullet.destroy();
+            this.colissions(enemy);
         });
+
+        if (this.selectedCharacterIndex === 0 && this.orb) {
+            this.physics.add.overlap(this.orb, this.enemyGroup, (orb, enemy) => {
+                if (!enemy.lastHitTime || this.time.now - enemy.lastHitTime > 300) { // 300ms cooldown per enemy
+                    enemy.lastHitTime = this.time.now;
+
+                    if (enemy.health === undefined || enemy.health === null) {
+                        enemy.health = 1; // Assume normal enemies have 1 HP
+                    }
+
+                    enemy.health--;
+                    enemy.setTint(0xff0000);
+
+                    this.time.delayedCall(100, () => {
+                        if (enemy.active) enemy.clearTint();
+                    });
+
+                    if (enemy.health <= 0) {
+                        this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                        enemy.destroy();
+                    }
+                }
+            });
+        }
         this.physics.add.collider(this.player, this.coinGroup, (player, coin) => {
             this.playerXP += 10 + this.coinXPBonus;
             if (this.playerXP >= this.nextLevelXP) this.levelUP(); else this.updateLevelText();
@@ -756,30 +883,47 @@ class PlayGame extends Phaser.Scene {
             if (!npc.collected) { npc.collected = true; npc.destroy(); this.npcArrow?.setVisible(false); this.npcArrow.target = null; this.upgradeTime(); }
         });
     }
-    showBossDefeatedMessage() {
-        const message = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY - 100,
-            'BOSS DERROTADO!',
-            { 
-                fontSize: '48px', 
-                fill: '#FFD700', 
-                fontFamily: 'Arial',
-                stroke: '#000000',
-                strokeThickness: 5
+    colissions(enemy){
+            const enemyType = enemy.texture?.key;
+
+            if (enemyType === 'gatoPernas') {
+                enemy.health--;
+                enemy.setTint(0xff0000);
+                this.time.delayedCall(100, () => { if (enemy.active) enemy.setTint(GameOptions.secondEnemy.color); });
+                if (enemy.health <= 0) { this.spawnCoinCluster(enemy.x, enemy.y, 5); enemy.destroy(); }
             }
-        )
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(10000);
-        
-        this.tweens.add({
-            targets: message,
-            y: message.y - 50,
-            alpha: 0,
-            duration: 3000,
-            ease: 'Power2',
-            onComplete: () => message.destroy()
+            else if (enemyType === 'gatoPreto') {
+                enemy.health--;
+                enemy.setTint(0xff0000);
+                this.time.delayedCall(100, () => { if (enemy.active) enemy.setTint(GameOptions.thirdEnemy.color); });
+                if (enemy.health <= 0) { this.spawnCoinCluster(enemy.x, enemy.y, 6); enemy.destroy(); }
+            }
+            else if (enemyType === 'gatoCapuz') {
+                enemy.health--;
+                enemy.setTint(0xff0000);
+                this.time.delayedCall(100, () => { if (enemy.active) enemy.setTint(GameOptions.fourthEnemy.color); });
+                if (enemy.health <= 0) { this.spawnCoinCluster(enemy.x, enemy.y, 8); enemy.destroy(); }
+            }
+            else if (enemyType === 'boss') {
+                enemy.health--;
+                enemy.setTint(0xff0000);
+                this.time.delayedCall(100, () => { if (enemy.active) enemy.setTint(GameOptions.fifthEnemy.color); });
+                if (enemy.health <= 0) {
+                    this.spawnCoinCluster(enemy.x, enemy.y, 20);
+                    enemy.destroy();
+                    this.time.delayedCall(1000, () => { this.showBossDefeatedMessage(); });
+                }
+            }
+            else {
+                this.spawnCoinCluster(enemy.x, enemy.y, 1);
+                enemy.destroy();
+            }
+    }
+
+    showBossDefeatedMessage() {
+        this.music.stop()
+        this.scene.start("victoryScene", {
+            characterIndex: this.selectedCharacterIndex 
         });
     }
     spawnCoinCluster(x, y, count) {
@@ -961,9 +1105,14 @@ class PlayGame extends Phaser.Scene {
                 targets: [this.gameOverText, this.restartText], alpha: 1, ease: 'Linear'
             });
         }
+        console.log('Restarting scene with:', {
+            characterIndex: this.selectedCharacterIndex,
+            spawnX: this.initialSpawnX,
+            spawnY: this.initialSpawnY
+        });
         this.music.stop(); 
         this.input.keyboard?.once('keydown-R', () => { 
-        this.scene.restart({ spawnX: this.initialSpawnX, spawnY: this.initialSpawnY }); });
+        this.scene.restart({ characterIndex: this.selectedCharacterIndex, spawnX: this.player.x, spawnY: this.player.y }); });
         this.timeBar.clear().fillStyle(0xff0000, 1).fillRect(0, 0, this.cameras.main.width * 0.9, 20);
     }
 }
