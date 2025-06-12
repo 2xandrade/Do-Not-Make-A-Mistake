@@ -120,8 +120,8 @@ class PlayGame extends Phaser.Scene {
         this.boomerangGroup = this.physics.add.group();
 
         // === MÚSICA ===
-        this.music = this.sound.add('jogoSong', {
-            volume: 1,   
+        this.music = this.sound.add('jogoSong2', {
+            volume: 0.5,   
             loop: true   
         });
         this.music.play();

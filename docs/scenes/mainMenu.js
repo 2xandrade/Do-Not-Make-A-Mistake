@@ -111,7 +111,7 @@ tileWeightPool = [
     this.createCharacterSelection(centerX, centerY);
 
     this.music = this.sound.add('doNotSong', {
-            volume: 1,   
+            volume: 0.5,   
             loop: true   
         });
         
