@@ -757,29 +757,9 @@ class PlayGame extends Phaser.Scene {
         });
     }
     showBossDefeatedMessage() {
-        const message = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY - 100,
-            'BOSS DERROTADO!',
-            { 
-                fontSize: '48px', 
-                fill: '#FFD700', 
-                fontFamily: 'Arial',
-                stroke: '#000000',
-                strokeThickness: 5
-            }
-        )
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(10000);
-        
-        this.tweens.add({
-            targets: message,
-            y: message.y - 50,
-            alpha: 0,
-            duration: 3000,
-            ease: 'Power2',
-            onComplete: () => message.destroy()
+       this.music.stop()
+        this.scene.start("victoryScene", {
+            characterIndex: this.selectedCharacterIndex 
         });
     }
     spawnCoinCluster(x, y, count) {
