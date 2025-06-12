@@ -11,13 +11,19 @@ class VictoryScene extends Phaser.Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        // Fundo (reutilizando o tileset do MainMenu)
+        // Fundo
         this.createTileBackground();
 
-        // Personagem vencedor (usando os mesmos dados de CHARACTERS)
-        const character = MainMenu.CHARACTERS[this.characterIndex];
-        const sprite = this.add.sprite(centerX, centerY - 100, character.key, character.frameMenu)
-            .setDisplaySize(300, 300)
+        // --- PERSONAGEM VENCEDOR ---
+        let victoryImage;
+
+        const victoryImages = ['paladinoTwink', 'bardoTwink', 'arqueiraMulher', 'ladinaPassiva'];
+        this.add.sprite(centerX, centerY - 100, victoryImages[this.characterIndex])
+            .setDisplaySize(300, 300);
+
+        // Adiciona o sprite com a imagem escolhida
+        const sprite = this.add.sprite(centerX, centerY - 100, victoryImage)
+            .setDisplaySize(300, 300);
 
         // Mensagem de vitória
         this.add.text(centerX, centerY + 150, "VITÓRIA!", { 
@@ -30,12 +36,14 @@ class VictoryScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Nome do personagem
-        this.add.text(centerX, centerY + 220, `${character.name} conquistou a glória!`, {
+        const characterNames = ["Paladino", "Bardo", "Arqueira", "Ladina"];
+        this.add.text(centerX, centerY + 220, `${characterNames[this.characterIndex]} conquistou a glória!`, {
             fontSize: "36px",
             fill: "#ffffff",
             fontFamily: "Arial",
             fontStyle: "bold"
         }).setOrigin(0.5);
+
 
         // Volta automaticamente ao menu após 5 segundos (opcional)
         this.time.delayedCall(5000, () => {
