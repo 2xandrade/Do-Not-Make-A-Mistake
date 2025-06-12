@@ -18,7 +18,6 @@ class VictoryScene extends Phaser.Scene {
         const character = MainMenu.CHARACTERS[this.characterIndex];
         const sprite = this.add.sprite(centerX, centerY - 100, character.key, character.frameMenu)
             .setDisplaySize(300, 300)
-            .setTint(character.color);
 
         // Mensagem de vitória
         this.add.text(centerX, centerY + 150, "VITÓRIA!", { 
