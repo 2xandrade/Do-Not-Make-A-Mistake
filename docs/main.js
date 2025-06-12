@@ -20,6 +20,7 @@ window.onload = function() {
         scale           : scaleObject,                      // scale settings
         scene           : [                                 // array with game scenes
             MainMenu,
+            VictoryScene,
             PreloadAssets, // Assumes PreloadAssets class is globally available
             PlayGame       // Assumes PlayGame class is globally available
         ],
